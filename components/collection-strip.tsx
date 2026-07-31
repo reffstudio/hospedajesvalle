@@ -15,7 +15,9 @@ import { useLanguage } from "./language-provider"
 import { useCtaInNav } from "./hero-scroll-context"
 import {
   discoverValleyGallery,
+  indexFromGalleryProgress,
   scrollToProperties,
+  scrollTopForGalleryIndex,
   menuOffsetForIndex,
   menuDragConstraints,
 } from "@/lib/discover-valley"
@@ -46,11 +48,16 @@ export function CollectionStrip() {
   })
   const menuY = useMotionValue(menuOffsetForIndex(0, DEFAULT_SLOT_HEIGHT))
   const isDragging = useRef(false)
+  const isWheelNavigating = useRef(false)
   const activeIndexRef = useRef(activeIndex)
   activeIndexRef.current = activeIndex
 
   const { slotHeight, menuHeight } = layout
   const dragLimits = menuDragConstraints(itemCount, slotHeight)
+
+  const getViewportHeight = useCallback(() => {
+    return stickyRef.current?.clientHeight ?? window.innerHeight
+  }, [])
 
   const items = discoverValleyGallery.map((item) => ({
     ...item,
@@ -75,25 +82,23 @@ export function CollectionStrip() {
   )
 
   const scrollSectionToIndex = useCallback(
-    (index: number) => {
+    (index: number, behavior: ScrollBehavior = "smooth") => {
       const section = sectionRef.current
-      const sticky = stickyRef.current
       if (!section || itemCount <= 1) return
-      const progress = index / (itemCount - 1)
-      const viewportHeight = sticky?.clientHeight ?? window.innerHeight
-      const top = section.offsetTop + progress * (section.offsetHeight - viewportHeight)
-      window.scrollTo({ top, behavior: "smooth" })
+
+      const top = scrollTopForGalleryIndex(section, index, itemCount, getViewportHeight())
+      window.scrollTo({ top, behavior })
     },
-    [itemCount],
+    [getViewportHeight, itemCount],
   )
 
   const goToIndex = useCallback(
-    (index: number, syncScroll = true) => {
+    (index: number, syncScroll = true, scrollBehavior: ScrollBehavior = "smooth") => {
       const next = clampIndex(index)
       setActiveIndex(next)
       snapMenuToIndex(next)
       if (syncScroll && !isDragging.current) {
-        scrollSectionToIndex(next)
+        scrollSectionToIndex(next, scrollBehavior)
       }
     },
     [clampIndex, snapMenuToIndex, scrollSectionToIndex],
@@ -108,9 +113,10 @@ export function CollectionStrip() {
   const remainingCount = itemCount - 1 - activeIndex
 
   useMotionValueEvent(scrollYProgress, "change", (progress) => {
-    if (isDragging.current || itemCount <= 1) return
-    const next = clampIndex(Math.round(progress * (itemCount - 1)))
+    if (isDragging.current || isWheelNavigating.current || itemCount <= 1) return
+
     setActiveIndex((prev) => {
+      const next = indexFromGalleryProgress(progress, itemCount)
       if (prev !== next) {
         animate(menuY, menuOffsetForIndex(next, slotHeight), { duration: 0.35, ease })
       }
@@ -172,13 +178,33 @@ export function CollectionStrip() {
 
     const onWheel = (e: WheelEvent) => {
       if (!isPinned || itemCount <= 1) return
+
+      const current = activeIndexRef.current
+      const goingDown = e.deltaY > 0
+      const goingUp = e.deltaY < 0
+
+      // At section edges, allow native scroll so the page can continue up/down
+      if (goingUp && current === 0) return
+      if (goingDown && current === itemCount - 1) return
+
       e.preventDefault()
-      goToIndex(activeIndexRef.current + (e.deltaY > 0 ? 1 : -1), true)
+
+      const next = clampIndex(current + (goingDown ? 1 : -1))
+      if (next === current) return
+
+      isWheelNavigating.current = true
+      setActiveIndex(next)
+      snapMenuToIndex(next)
+      scrollSectionToIndex(next, "auto")
+
+      window.setTimeout(() => {
+        isWheelNavigating.current = false
+      }, 120)
     }
 
     sticky.addEventListener("wheel", onWheel, { passive: false })
     return () => sticky.removeEventListener("wheel", onWheel)
-  }, [goToIndex, isPinned, itemCount])
+  }, [clampIndex, isPinned, itemCount, scrollSectionToIndex, snapMenuToIndex])
 
   return (
     <section

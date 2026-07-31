@@ -46,6 +46,24 @@ export function scrollToProperties(filterCategory?: DiscoverValleyFilterCategory
   document.getElementById("propiedades")?.scrollIntoView({ behavior: "smooth" })
 }
 
+/** Scroll position that aligns the gallery with `index` inside a tall section */
+export function scrollTopForGalleryIndex(
+  section: HTMLElement,
+  index: number,
+  itemCount: number,
+  viewportHeight: number,
+) {
+  if (itemCount <= 1) return section.offsetTop
+  const progress = index / (itemCount - 1)
+  return section.offsetTop + progress * (section.offsetHeight - viewportHeight)
+}
+
+export function indexFromGalleryProgress(progress: number, itemCount: number) {
+  if (itemCount <= 1) return 0
+  const scaled = progress * (itemCount - 1)
+  return Math.min(itemCount - 1, Math.max(0, Math.round(scaled)))
+}
+
 /** Vertical offset so `index` sits in the center of the menu viewport */
 export function menuOffsetForIndex(index: number, slotHeight: number) {
   return slotHeight * (1 - index)
