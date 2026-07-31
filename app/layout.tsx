@@ -31,7 +31,19 @@ const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
 })
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+
+const shareImage = {
+  url: "/og-share.png",
+  alt: "Hospedajes en Valle de Guadalupe — logo sobre viñedos del valle",
+  width: 1024,
+  height: 1024,
+}
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Hospedajes en Valle de Guadalupe — Renta y administración de propiedades",
   description:
     "Hospedajes boutique en Valle de Guadalupe, Baja California. Rentamos y administramos villas, cabañas y glamping entre viñedos.",
@@ -49,27 +61,15 @@ export const metadata: Metadata = {
     description:
       "Villas, cabañas y glamping boutique entre los viñedos de Valle de Guadalupe, Baja California.",
     type: "website",
-    images: [
-      {
-        url: "/fondo-valle-1.png",
-        alt: "Viñedos y montañas del Valle de Guadalupe",
-        width: 1200,
-        height: 630,
-      },
-    ],
-    locale: "en_US",
+    images: [shareImage],
+    locale: "es_MX",
   },
   twitter: {
     card: "summary_large_image",
     title: "Hospedajes en Valle de Guadalupe",
     description:
       "Villas, cabañas y glamping boutique entre los viñedos de Valle de Guadalupe, Baja California.",
-    images: [
-      {
-        url: "/fondo-valle-1.png",
-        alt: "Viñedos y montañas del Valle de Guadalupe",
-      },
-    ],
+    images: [shareImage],
     site: "@hospedajesvalle",
   },
 }
