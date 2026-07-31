@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useEffect, useCallback } from "react"
+import { useRef, useState, useEffect, useCallback, type PointerEvent as ReactPointerEvent } from "react"
 import {
   motion,
   useScroll,
@@ -19,12 +19,14 @@ import {
   scrollToProperties,
   scrollTopForGalleryIndex,
   menuOffsetForIndex,
-  menuDragConstraints,
 } from "@/lib/discover-valley"
 import { cn } from "@/lib/utils"
 
 const DEFAULT_SLOT_HEIGHT = 112
 const ease = [0.21, 0.47, 0.32, 0.98] as const
+const MENU_DRAG_THRESHOLD_PX = 8
+const AUTO_SCROLL_INTERVAL_MS = 2000
+const AUTO_SCROLL_PAUSE_MS = 9000
 
 type GalleryLayout = {
   slotHeight: number
@@ -41,18 +43,29 @@ export function CollectionStrip() {
   const menuAreaRef = useRef<HTMLDivElement>(null)
   const itemCount = discoverValleyGallery.length
   const [activeIndex, setActiveIndex] = useState(0)
+  const [sectionEngaged, setSectionEngaged] = useState(false)
   const [layout, setLayout] = useState<GalleryLayout>({
     slotHeight: DEFAULT_SLOT_HEIGHT,
     menuHeight: DEFAULT_SLOT_HEIGHT * 3,
   })
   const menuY = useMotionValue(menuOffsetForIndex(0, DEFAULT_SLOT_HEIGHT))
-  const isDragging = useRef(false)
   const lastScrollProgress = useRef(0)
   const activeIndexRef = useRef(activeIndex)
+  const menuPointerId = useRef<number | null>(null)
+  const menuPointerStart = useRef({ y: 0, scrollTop: 0 })
+  const menuPointerDragged = useRef(false)
+  const suppressMenuClick = useRef(false)
+  const autoScrollPausedUntil = useRef(0)
+  const isAutoAdvancing = useRef(false)
+  const lastAutoAdvanceAt = useRef(0)
+  const prefersReducedMotion = useRef(false)
   activeIndexRef.current = activeIndex
 
+  const pauseAutoScroll = useCallback((durationMs = AUTO_SCROLL_PAUSE_MS) => {
+    autoScrollPausedUntil.current = Date.now() + durationMs
+  }, [])
+
   const { slotHeight, menuHeight } = layout
-  const dragLimits = menuDragConstraints(itemCount, slotHeight)
 
   const getViewportHeight = useCallback(() => {
     if (typeof window !== "undefined") {
@@ -69,11 +82,6 @@ export function CollectionStrip() {
   const clampIndex = useCallback(
     (index: number) => Math.min(itemCount - 1, Math.max(0, index)),
     [itemCount],
-  )
-
-  const indexFromMenuY = useCallback(
-    (y: number) => clampIndex(Math.round(1 - y / slotHeight)),
-    [clampIndex, slotHeight],
   )
 
   const snapMenuToIndex = useCallback(
@@ -95,17 +103,71 @@ export function CollectionStrip() {
   )
 
   const goToIndex = useCallback(
-    (index: number, syncScroll = true, scrollBehavior: ScrollBehavior = "smooth") => {
+    (
+      index: number,
+      syncScroll = true,
+      scrollBehavior: ScrollBehavior = "smooth",
+      options?: { fromAuto?: boolean },
+    ) => {
       const next = clampIndex(index)
+      if (!options?.fromAuto) {
+        pauseAutoScroll()
+      }
       activeIndexRef.current = next
       setActiveIndex(next)
       snapMenuToIndex(next)
-      if (syncScroll && !isDragging.current) {
+      if (syncScroll) {
         scrollSectionToIndex(next, scrollBehavior)
+        if (itemCount > 1) {
+          lastScrollProgress.current = next / (itemCount - 1)
+        }
       }
     },
-    [clampIndex, snapMenuToIndex, scrollSectionToIndex],
+    [clampIndex, itemCount, pauseAutoScroll, snapMenuToIndex, scrollSectionToIndex],
   )
+
+  const handleMenuPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || event.pointerType !== "mouse") return
+
+    pauseAutoScroll()
+
+    menuPointerId.current = event.pointerId
+    menuPointerDragged.current = false
+    suppressMenuClick.current = false
+    menuPointerStart.current = {
+      y: event.clientY,
+      scrollTop: window.scrollY,
+    }
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }, [pauseAutoScroll])
+
+  const handleMenuPointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (menuPointerId.current !== event.pointerId) return
+
+    const deltaY = menuPointerStart.current.y - event.clientY
+    if (!menuPointerDragged.current && Math.abs(deltaY) < MENU_DRAG_THRESHOLD_PX) return
+
+    menuPointerDragged.current = true
+    suppressMenuClick.current = true
+    pauseAutoScroll()
+    event.preventDefault()
+
+    window.scrollTo({
+      top: menuPointerStart.current.scrollTop + deltaY,
+      behavior: "auto",
+    })
+  }, [pauseAutoScroll])
+
+  const endMenuPointer = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (menuPointerId.current !== event.pointerId) return
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+
+    menuPointerId.current = null
+    menuPointerDragged.current = false
+  }, [])
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -120,7 +182,7 @@ export function CollectionStrip() {
   const remainingCount = itemCount - 1 - activeIndex
 
   useMotionValueEvent(scrollYProgress, "change", (progress) => {
-    if (isDragging.current || itemCount <= 1) return
+    if (itemCount <= 1) return
 
     const previousProgress = lastScrollProgress.current
     lastScrollProgress.current = progress
@@ -138,6 +200,92 @@ export function CollectionStrip() {
   useEffect(() => {
     menuY.set(menuOffsetForIndex(activeIndexRef.current, slotHeight))
   }, [menuY, slotHeight])
+
+  useEffect(() => {
+    prefersReducedMotion.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)")
+    const onChange = (event: MediaQueryListEvent) => {
+      prefersReducedMotion.current = event.matches
+    }
+    media.addEventListener("change", onChange)
+    return () => media.removeEventListener("change", onChange)
+  }, [])
+
+  useEffect(() => {
+    const sticky = stickyRef.current
+    if (!sticky) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setSectionEngaged(entry.isIntersecting && entry.intersectionRatio >= 0.85),
+      { threshold: [0, 0.85, 1] },
+    )
+    observer.observe(sticky)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!sectionEngaged || itemCount <= 1 || prefersReducedMotion.current) return
+
+    const tick = () => {
+      if (Date.now() < autoScrollPausedUntil.current) return
+      if (document.hidden) return
+      if (menuPointerId.current !== null) return
+
+      const next = (activeIndexRef.current + 1) % itemCount
+      isAutoAdvancing.current = true
+      lastAutoAdvanceAt.current = Date.now()
+      goToIndex(next, true, "smooth", { fromAuto: true })
+
+      window.setTimeout(() => {
+        isAutoAdvancing.current = false
+      }, 2500)
+    }
+
+    const intervalId = window.setInterval(tick, AUTO_SCROLL_INTERVAL_MS)
+    return () => window.clearInterval(intervalId)
+  }, [goToIndex, itemCount, sectionEngaged])
+
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return
+
+    const onWheel = () => {
+      if (isAutoAdvancing.current || Date.now() - lastAutoAdvanceAt.current < 2500) return
+      pauseAutoScroll()
+    }
+
+    section.addEventListener("wheel", onWheel, { passive: true })
+    section.addEventListener("touchstart", pauseAutoScroll, { passive: true })
+    return () => {
+      section.removeEventListener("wheel", onWheel)
+      section.removeEventListener("touchstart", pauseAutoScroll)
+    }
+  }, [pauseAutoScroll])
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY
+
+    const onScroll = () => {
+      const gracePeriodActive =
+        isAutoAdvancing.current || Date.now() - lastAutoAdvanceAt.current < 2500
+
+      if (gracePeriodActive) {
+        lastScrollY = window.scrollY
+        return
+      }
+      if (!sectionEngaged) {
+        lastScrollY = window.scrollY
+        return
+      }
+      if (Math.abs(window.scrollY - lastScrollY) > 1) {
+        pauseAutoScroll()
+      }
+      lastScrollY = window.scrollY
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [pauseAutoScroll, sectionEngaged])
 
   useEffect(() => {
     const sticky = stickyRef.current
@@ -229,7 +377,7 @@ export function CollectionStrip() {
         {/* Vertical menu — fills remaining viewport height */}
         <div
           ref={menuAreaRef}
-          className="relative z-20 flex min-h-0 flex-1 items-center justify-center px-6 sm:px-10"
+          className="relative z-20 flex min-h-0 flex-1 items-center justify-center px-6 sm:px-10 touch-pan-y"
         >
           <div
             className="relative w-full max-w-2xl overflow-hidden"
@@ -241,23 +389,12 @@ export function CollectionStrip() {
             }}
           >
             <motion.div
-              className="cursor-grab active:cursor-grabbing"
+              className="cursor-grab touch-pan-y active:cursor-grabbing"
               style={{ y: menuY }}
-              drag="y"
-              dragConstraints={dragLimits}
-              dragElastic={0.06}
-              onDragStart={() => {
-                isDragging.current = true
-              }}
-              onDragEnd={(_, info) => {
-                isDragging.current = false
-                const projected = menuY.get() + info.velocity.y * 0.1
-                const next = indexFromMenuY(projected)
-                activeIndexRef.current = next
-                setActiveIndex(next)
-                snapMenuToIndex(next)
-                scrollSectionToIndex(next)
-              }}
+              onPointerDown={handleMenuPointerDown}
+              onPointerMove={handleMenuPointerMove}
+              onPointerUp={endMenuPointer}
+              onPointerCancel={endMenuPointer}
             >
               {items.map((item, index) => {
                 const isActive = index === activeIndex
@@ -268,6 +405,10 @@ export function CollectionStrip() {
                     key={item.id}
                     type="button"
                     onClick={() => {
+                      if (suppressMenuClick.current) {
+                        suppressMenuClick.current = false
+                        return
+                      }
                       if (isActive) {
                         scrollToProperties(item.filterCategory)
                         return
