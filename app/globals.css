@@ -15,7 +15,7 @@
 @import "tw-animate-css";
 
 :root {
-  --site-header-height: 4rem;
+  --site-header-height: 6.5rem;
   /* Semantic tokens — Valle de Guadalupe brand */
   --background: oklch(0.97 0.012 115);
   --foreground: oklch(0.18 0.02 155);

@@ -47,7 +47,7 @@ export function BrandLogo({ variant, className, href = "/" }: BrandLogoProps) {
           "object-contain mx-auto",
           variant === "hero"
             ? "h-32 w-32 sm:h-40 sm:w-40 md:h-44 md:w-44 lg:h-52 lg:w-52 drop-shadow-lg"
-            : "h-14 w-14 lg:h-16 lg:w-16",
+            : "h-14 w-14 max-lg:h-11 max-lg:w-11 lg:h-16 lg:w-16",
         )}
       />
     </motion.a>

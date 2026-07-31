@@ -7,6 +7,7 @@ import type { Locale } from "@/lib/i18n/types"
 
 type LanguageSwitcherProps = {
   variant?: "fixed" | "inline"
+  compact?: boolean
   className?: string
 }
 
@@ -28,7 +29,7 @@ function LocaleFlag({ flag }: { flag: string }) {
   )
 }
 
-export function LanguageSwitcher({ variant = "fixed", className }: LanguageSwitcherProps) {
+export function LanguageSwitcher({ variant = "fixed", compact = false, className }: LanguageSwitcherProps) {
   const { locale, setLocale, t } = useLanguage()
 
   return (
@@ -53,12 +54,13 @@ export function LanguageSwitcher({ variant = "fixed", className }: LanguageSwitc
             aria-pressed={active}
             aria-label={option.value === "en" ? "English" : "Español"}
             className={cn(
-              "inline-flex min-w-[2.85rem] items-center justify-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-semibold tracking-wide transition-colors",
+              "inline-flex items-center justify-center gap-1.5 rounded-full px-1.5 py-1 text-[11px] font-semibold tracking-wide transition-colors sm:px-2",
+              compact ? "min-w-[2rem] sm:min-w-[2.85rem]" : "min-w-[2.85rem]",
               active ? "bg-white text-valle-forest-900" : "text-white/75 hover:text-white",
             )}
           >
             <LocaleFlag flag={option.flag} />
-            <span>{option.label}</span>
+            <span className={cn(compact && "hidden min-[420px]:inline")}>{option.label}</span>
           </button>
         )
       })}
