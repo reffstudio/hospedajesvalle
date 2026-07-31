@@ -58,10 +58,25 @@ export function scrollTopForGalleryIndex(
   return section.offsetTop + progress * (section.offsetHeight - viewportHeight)
 }
 
-export function indexFromGalleryProgress(progress: number, itemCount: number) {
+export function indexFromGalleryProgress(
+  progress: number,
+  itemCount: number,
+  previousIndex: number,
+  previousProgress: number,
+) {
   if (itemCount <= 1) return 0
+
   const scaled = progress * (itemCount - 1)
-  return Math.min(itemCount - 1, Math.max(0, Math.round(scaled)))
+
+  if (progress > previousProgress + 0.0001) {
+    return Math.min(itemCount - 1, Math.max(previousIndex, Math.floor(scaled + 0.5)))
+  }
+
+  if (progress < previousProgress - 0.0001) {
+    return Math.max(0, Math.min(previousIndex, Math.ceil(scaled - 0.5)))
+  }
+
+  return previousIndex
 }
 
 /** Vertical offset so `index` sits in the center of the menu viewport */
