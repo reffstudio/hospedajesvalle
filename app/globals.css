@@ -496,7 +496,7 @@
     animation-duration: 2.2s;
   }
 
-  /* View-all-properties — secondary CTA: glass outline, hover sweep (no gold glow) */
+  /* View-all-properties — secondary CTA: glass outline + soft light sweep */
   .view-all-properties-btn {
     @apply relative isolate overflow-hidden backdrop-blur-sm;
     border: 1.5px solid rgba(255, 255, 255, 0.38);
@@ -504,35 +504,40 @@
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.12),
       0 2px 12px rgba(0, 0, 0, 0.12);
+    animation: view-all-properties-border-pulse 3.6s ease-in-out infinite;
     transition:
       border-color 0.35s ease,
       background 0.35s ease,
-      box-shadow 0.35s ease;
+      filter 0.35s ease;
   }
 
   .view-all-properties-btn:hover {
     border-color: rgba(255, 255, 255, 0.72);
     background: rgba(255, 255, 255, 0.14);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.2),
-      0 8px 28px rgba(0, 0, 0, 0.22);
+    filter: brightness(1.06);
+  }
+
+  .view-all-properties-btn__glow {
+    background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.22) 0%, transparent 68%);
+    opacity: 0.55;
+    animation: view-all-properties-glow 3.2s ease-in-out infinite;
   }
 
   .view-all-properties-btn__sweep {
     background: linear-gradient(
       105deg,
-      transparent 35%,
+      transparent 38%,
       rgba(255, 255, 255, 0) 44%,
-      rgba(255, 255, 255, 0.28) 50%,
+      rgba(255, 255, 255, 0.52) 50%,
       rgba(255, 255, 255, 0) 56%,
-      transparent 65%
+      transparent 62%
     );
     transform: translateX(-120%);
-    transition: transform 0.65s ease;
+    animation: view-all-properties-shimmer 4.4s ease-in-out infinite;
   }
 
   .view-all-properties-btn:hover .view-all-properties-btn__sweep {
-    transform: translateX(120%);
+    animation-duration: 2.6s;
   }
 }
 
@@ -592,6 +597,43 @@
   }
 }
 
+@keyframes view-all-properties-shimmer {
+  0%,
+  70% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes view-all-properties-glow {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@keyframes view-all-properties-border-pulse {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 2px 12px rgba(0, 0, 0, 0.12);
+    border-color: rgba(255, 255, 255, 0.36);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      0 4px 18px rgba(0, 0, 0, 0.16),
+      0 0 22px rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.52);
+  }
+}
+
 /* Reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -610,7 +652,10 @@
   .pre-reservar-btn__shimmer,
   .pre-reservar-btn__gradient,
   .pre-reservar-btn--nav,
-  .pre-reservar-btn--hero-cta {
+  .pre-reservar-btn--hero-cta,
+  .view-all-properties-btn,
+  .view-all-properties-btn__glow,
+  .view-all-properties-btn__sweep {
     animation: none !important;
   }
 }

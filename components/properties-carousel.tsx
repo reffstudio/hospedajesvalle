@@ -146,8 +146,9 @@ export function PropertiesCarousel({ properties, onQuickLook }: PropertiesCarous
         <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} transition={{ duration: 0.25 }}>
           <Link
             href="/propiedades"
-            className="view-all-properties-btn group inline-flex items-center gap-2.5 rounded-full px-7 py-3 text-sm font-semibold tracking-wide text-white"
+            className="view-all-properties-btn group relative isolate inline-flex items-center gap-2.5 overflow-hidden rounded-full px-7 py-3 text-sm font-semibold tracking-wide text-white"
           >
+            <span className="view-all-properties-btn__glow pointer-events-none absolute inset-0 rounded-full" aria-hidden />
             <span className="view-all-properties-btn__sweep pointer-events-none absolute inset-0 rounded-full" aria-hidden />
             <span className="relative z-10">{t.carousel.fullList}</span>
             <ArrowRight
