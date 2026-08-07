@@ -12,7 +12,6 @@ nombre_en:                    # opcional; si no hay, uso traducción aproximada
 slug:                         # opcional; ej. "casa-luna" — si no, lo genero del nombre
 precio:                       # ej. "$4,500" o "4500"
 moneda: MXN                   # MXN o USD
-badge:                        # Nuevo | Popular | Limitado | (vacío)
 featured: true                # true = aparece en carrusel del home
 orden_featured: 1             # 1 = primera en carrusel (solo si featured: true)
 

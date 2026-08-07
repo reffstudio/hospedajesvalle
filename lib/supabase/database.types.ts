@@ -17,9 +17,9 @@ export type Database = {
           price_label: string
           currency: "MXN" | "USD"
           status: "published" | "hidden" | "draft"
+          stay_type: "private" | "shared" | "events"
           featured: boolean
           featured_order: number | null
-          badge: "Nuevo" | "Popular" | "Limitado" | null
           max_guests: number
           bedrooms: number
           full_bathrooms: number

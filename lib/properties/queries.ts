@@ -55,7 +55,6 @@ function featuredProductToPublic(
     quickLookImages: product.quickLookImages,
     image: product.image,
     materials: product.materials,
-    badge: product.badge,
   }
 }
 

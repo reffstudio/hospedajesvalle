@@ -1,10 +1,12 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
-import { useMotionValue, useMotionValueEvent, type MotionValue } from "framer-motion"
+import { useMotionValue, type MotionValue } from "framer-motion"
 
 /** When hero scroll animation begins, the CTA moves from hero into the navbar. */
 const CTA_NAV_THRESHOLD = 0.06
+/** Scroll back near the top to return the CTA to the hero. */
+const CTA_HERO_RESET_THRESHOLD = 0.02
 
 const HeroScrollContext = createContext<MotionValue<number> | null>(null)
 
@@ -22,21 +24,43 @@ export function useHeroScrollProgress() {
   return ctx
 }
 
-export function useCtaInNav() {
-  const scrollYProgress = useHeroScrollProgress()
-  const [ctaInNav, setCtaInNav] = useState(() => scrollYProgress.get() > CTA_NAV_THRESHOLD)
-
-  useMotionValueEvent(scrollYProgress, "change", (v) => {
-    setCtaInNav(v > CTA_NAV_THRESHOLD)
-  })
+/** Latches once the hero CTA hands off — stays in nav after the hero unpins. Resets only near page top. */
+function useCtaHandedOffToNav() {
+  const scrollYProgress = useOptionalHeroScrollProgress()
+  const [handedOff, setHandedOff] = useState(() =>
+    scrollYProgress ? scrollYProgress.get() > CTA_NAV_THRESHOLD : true,
+  )
 
   useEffect(() => {
-    setCtaInNav(scrollYProgress.get() > CTA_NAV_THRESHOLD)
+    if (!scrollYProgress) {
+      setHandedOff(true)
+      return
+    }
+
+    const update = (value: number) => {
+      if (value > CTA_NAV_THRESHOLD) {
+        setHandedOff(true)
+      } else if (value <= CTA_HERO_RESET_THRESHOLD) {
+        setHandedOff(false)
+      }
+    }
+
+    update(scrollYProgress.get())
+    return scrollYProgress.on("change", update)
   }, [scrollYProgress])
 
-  return ctaInNav
+  return handedOff
+}
+
+export function useCtaInNav() {
+  return useCtaHandedOffToNav()
 }
 
 export function useOptionalHeroScrollProgress() {
   return useContext(HeroScrollContext)
+}
+
+/** Nav reserve CTA: hidden on home hero, visible once the hero CTA hands off on scroll. Always visible off-home. */
+export function useNavReserveButtonVisible() {
+  return useCtaHandedOffToNav()
 }

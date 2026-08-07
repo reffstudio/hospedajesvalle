@@ -1,15 +1,24 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useState, type MouseEvent } from "react"
 import { usePathname } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
-import { ChevronDown } from "lucide-react"
+import { Home } from "lucide-react"
 import { cn } from "@/lib/utils"
+import {
+  HERO_FEATURED_PROPERTIES_HASH,
+  HERO_SCROLL_RESET_EVENT,
+} from "@/lib/hero-featured-scroll"
+import {
+  smoothScrollToHeroFeatured,
+  smoothScrollToHome,
+  smoothScrollToSection,
+} from "@/lib/smooth-scroll"
 import { useOptionalHeroScrollProgress } from "./hero-scroll-context"
 import { useLanguage } from "./language-provider"
 
 export type SiteNavLink = {
   name: string
+  mobileLabel?: string
   href: string
   sectionId: string
 }
@@ -18,17 +27,18 @@ type SiteNavLinksProps = {
   links: SiteNavLink[]
 }
 
-const ease = [0.21, 0.47, 0.32, 0.98] as const
 const HOME_HERO_THRESHOLD = 0.32
-const SCROLL_SECTION_IDS = ["propiedades", "descubre-el-valle", "reviews", "administracion"] as const
+const SCROLL_SECTION_IDS = ["propiedades", "descubre-el-valle", "reviews"] as const
+
+function isHomeHashLink(href: string) {
+  return href.startsWith("#") || href.startsWith("/#")
+}
 
 function useSiteNavState(links: SiteNavLink[]) {
   const pathname = usePathname()
   const { t } = useLanguage()
   const heroProgress = useOptionalHeroScrollProgress()
   const [activeSectionId, setActiveSectionId] = useState("home")
-  const [open, setOpen] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
 
   const sectionLabels = useMemo(
     () => ({
@@ -97,121 +107,123 @@ function useSiteNavState(links: SiteNavLink[]) {
     if (pathname !== "/") return
 
     const hash = window.location.hash.replace("#", "")
+    if (hash === HERO_FEATURED_PROPERTIES_HASH) {
+      setActiveSectionId("propiedades")
+      return
+    }
+
     if (hash && hash in sectionLabels) {
       setActiveSectionId(hash)
     }
   }, [pathname, sectionLabels])
 
-  useEffect(() => {
-    if (!open) return
-
-    const handlePointerDown = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setOpen(false)
+  const handleMenuClick = (link: (typeof menuLinks)[number], event?: MouseEvent<HTMLAnchorElement>) => {
+    if (link.sectionId === "home") {
+      if (pathname === "/" && link.href === "#") {
+        event?.preventDefault()
+        void smoothScrollToHome()
       }
+      return
     }
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false)
-    }
+    if (pathname !== "/") return
 
-    document.addEventListener("mousedown", handlePointerDown)
-    document.addEventListener("keydown", handleKeyDown)
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown)
-      document.removeEventListener("keydown", handleKeyDown)
-    }
-  }, [open])
-
-  const activeLabel = sectionLabels[activeSectionId] ?? t.nav.home
-
-  const handleMenuClick = (link: (typeof menuLinks)[number]) => {
-    setOpen(false)
-    if (link.sectionId === "home" && link.href === "#") {
-      window.scrollTo({ top: 0, behavior: "smooth" })
+    if (isHomeHashLink(link.href)) {
+      event?.preventDefault()
+      if (link.sectionId === "propiedades") {
+        void smoothScrollToHeroFeatured()
+      } else {
+        void smoothScrollToSection(link.sectionId)
+      }
     }
   }
 
   return {
     t,
     activeSectionId,
-    activeLabel,
     menuLinks,
-    open,
-    setOpen,
-    containerRef,
     handleMenuClick,
   }
 }
 
-/** Full-width section picker — mobile second row (no overlap with CTA). */
+/** Mobile row 2 — all sections in one horizontal line. */
 export function SiteNavMobile({ links }: SiteNavLinksProps) {
-  const { t, activeSectionId, activeLabel, menuLinks, open, setOpen, containerRef, handleMenuClick } =
-    useSiteNavState(links)
+  const { t, activeSectionId, menuLinks, handleMenuClick } = useSiteNavState(links)
 
   return (
-    <div ref={containerRef} className="relative w-full lg:hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        aria-expanded={open}
-        aria-haspopup="menu"
-        aria-label={`${t.nav.menuToggleAria}: ${activeLabel}`}
-        className={cn(
-          "nav-link inline-flex w-full items-center justify-between gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-white/90 transition-colors hover:bg-white/15 hover:text-white",
-          open && "bg-white/15 text-white",
-        )}
-      >
-        <span className="truncate text-left text-xs font-medium">{activeLabel}</span>
-        <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform duration-200", open && "rotate-180")} />
-      </button>
+    <nav
+      className="flex w-full items-center justify-between border-t border-white/10 pt-2 md:hidden"
+      aria-label={t.nav.mainAria}
+    >
+      {menuLinks.map((link) => {
+        const isActive = link.sectionId === activeSectionId
+        const isHome = link.sectionId === "home"
+        const label = link.mobileLabel ?? link.name
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -6, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.98 }}
-            transition={{ duration: 0.2, ease }}
-            className="nav-dropdown absolute left-0 right-0 top-[calc(100%+0.5rem)] z-[200] overflow-hidden rounded-xl border border-white/12 py-1 shadow-lg"
-            role="menu"
+        return (
+          <a
+            key={link.sectionId}
+            href={link.href}
+            title={link.name}
+            aria-current={isActive ? "page" : undefined}
+            aria-label={isHome ? link.name : undefined}
+            onClick={(event) => handleMenuClick(link, event)}
+            className={cn(
+              "site-nav-mobile-link inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-full px-1 py-1 transition-colors",
+              isHome && "w-11",
+              isActive ? "bg-white/12 text-white" : "text-white/65 hover:bg-white/8 hover:text-white",
+            )}
           >
-            {menuLinks.map((link) => (
-              <a
-                key={link.sectionId}
-                href={link.href}
-                role="menuitem"
-                aria-current={link.sectionId === activeSectionId ? "page" : undefined}
-                onClick={() => handleMenuClick(link)}
-                className={cn(
-                  "nav-link block px-4 py-2.5 transition-colors hover:bg-white/10 hover:text-white",
-                  link.sectionId === activeSectionId ? "text-white" : "text-white/80",
-                )}
-              >
-                {link.name}
-              </a>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+            {isHome ? (
+              <>
+                <Home className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span className="sr-only">{link.name}</span>
+              </>
+            ) : (
+              label
+            )}
+          </a>
+        )
+      })}
+    </nav>
   )
 }
 
 export function SiteNavDesktop({ links }: SiteNavLinksProps) {
-  const { t } = useLanguage()
+  const { t, activeSectionId, menuLinks, handleMenuClick } = useSiteNavState(links)
 
   return (
-    <nav className="hidden items-center gap-5 lg:flex xl:gap-6" aria-label={t.nav.mainAria}>
-      {links.map((link) => (
-        <a
-          key={link.href}
-          href={link.href}
-          className="nav-link whitespace-nowrap text-white/80 transition-colors hover:text-white"
-        >
-          {link.name}
-        </a>
-      ))}
+    <nav
+      className="hidden min-w-0 flex-1 items-center justify-center gap-3 md:flex lg:gap-5 xl:gap-6"
+      aria-label={t.nav.mainAria}
+    >
+      {menuLinks.map((link) => {
+        const isActive = link.sectionId === activeSectionId
+        const isHome = link.sectionId === "home"
+
+        return (
+          <a
+            key={link.sectionId}
+            href={link.href}
+            aria-current={isActive ? "page" : undefined}
+            aria-label={isHome ? link.name : undefined}
+            onClick={(event) => handleMenuClick(link, event)}
+            className={cn(
+              "nav-link inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[11px] transition-colors lg:px-3 lg:py-2 lg:text-xs xl:text-sm",
+              isActive ? "bg-white/12 text-white" : "text-white/65 hover:bg-white/8 hover:text-white",
+            )}
+          >
+            {isHome ? (
+              <>
+                <Home className="h-4 w-4 shrink-0" aria-hidden />
+                <span className="sr-only">{link.name}</span>
+              </>
+            ) : (
+              link.name
+            )}
+          </a>
+        )
+      })}
     </nav>
   )
 }

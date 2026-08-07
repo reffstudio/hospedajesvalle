@@ -2,8 +2,6 @@
 
 import { motion } from "framer-motion"
 import Image from "next/image"
-import { cn } from "@/lib/utils"
-import { getBadgeLabel } from "@/lib/i18n/products"
 import { useLanguage } from "./language-provider"
 
 interface ProductCardProps {
@@ -12,7 +10,6 @@ interface ProductCardProps {
     name: string
     price: string
     image: string
-    badge?: "Nuevo" | "Popular" | "Limitado"
     materials: string[]
     quickLookImages: string[]
     dimensions: string
@@ -22,7 +19,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onQuickLook, priority = false }: ProductCardProps) {
-  const { locale, tf, t } = useLanguage()
+  const { tf, t } = useLanguage()
 
   return (
     <motion.div
@@ -42,23 +39,6 @@ export function ProductCard({ product, onQuickLook, priority = false }: ProductC
       }}
       aria-label={tf(t.carousel.viewDetails, { name: product.name })}
     >
-      {/* Badge */}
-      {product.badge && (
-        <div className="absolute top-4 left-4 z-20">
-          <span
-            className={cn(
-              "px-3 py-1 text-xs font-medium rounded-full backdrop-blur-sm",
-              product.badge === "Nuevo" && "bg-valle-olive-600/90 text-white",
-              product.badge === "Popular" && "bg-valle-wine-600/90 text-white",
-              product.badge === "Limitado" && "bg-valle-gold-600/90 text-white",
-            )}
-          >
-            {getBadgeLabel(product.badge, locale)}
-          </span>
-        </div>
-      )}
-
-      {/* Product Image */}
       <div
         className="relative overflow-hidden bg-valle-sage-200"
         style={{ aspectRatio: "25/36" }}
@@ -74,7 +54,6 @@ export function ProductCard({ product, onQuickLook, priority = false }: ProductC
         />
       </div>
 
-      {/* Product Info */}
       <div className="absolute bottom-0 left-0 right-0 p-6">
         <div
           className="absolute inset-0 backdrop-blur-sm"
@@ -101,7 +80,10 @@ export function ProductCard({ product, onQuickLook, priority = false }: ProductC
           <div>
             <h3 className="text-lg font-semibold text-white mb-1 drop-shadow-sm">{product.name}</h3>
             <p className="text-sm text-white/90 mb-2 drop-shadow-sm">{product.materials.join(", ")}</p>
-            <span className="text-xl font-bold text-white drop-shadow-sm">{product.price}</span>
+            <span className="text-xl font-bold text-white drop-shadow-sm">
+              <span className="mr-1 text-sm font-medium text-white/80">{t.common.priceFrom}</span>
+              {product.price}
+            </span>
           </div>
         </div>
       </div>

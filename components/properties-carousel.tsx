@@ -2,7 +2,8 @@
 
 import { useRef, useState, useEffect, useCallback } from "react"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { motion } from "framer-motion"
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react"
 import { ProductCard } from "./product-card"
 import { cn } from "@/lib/utils"
 import { useLanguage } from "./language-provider"
@@ -141,12 +142,19 @@ export function PropertiesCarousel({ properties, onQuickLook }: PropertiesCarous
       </div>
 
       <div className="mt-6 flex justify-center">
-        <Link
-          href="/propiedades"
-          className="inline-flex items-center rounded-full border border-white/30 bg-white/10 px-6 py-2.5 text-sm font-medium text-white backdrop-blur transition hover:bg-white/20"
-        >
-          {t.carousel.fullList}
-        </Link>
+        <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} transition={{ duration: 0.25 }}>
+          <Link
+            href="/propiedades"
+            className="view-all-properties-btn group inline-flex items-center gap-2.5 rounded-full px-7 py-3 text-sm font-semibold tracking-wide text-white"
+          >
+            <span className="view-all-properties-btn__sweep pointer-events-none absolute inset-0 rounded-full" aria-hidden />
+            <span className="relative z-10">{t.carousel.fullList}</span>
+            <ArrowRight
+              className="relative z-10 h-4 w-4 shrink-0 transition-transform duration-300 group-hover:translate-x-1"
+              aria-hidden
+            />
+          </Link>
+        </motion.div>
       </div>
     </div>
   )

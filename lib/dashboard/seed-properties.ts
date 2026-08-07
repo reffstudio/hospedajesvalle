@@ -1,4 +1,4 @@
-import { getStaticLegacyProducts } from "@/lib/properties/static-catalog"
+import { getStaticLegacyProducts, getStaticPropertyStayType } from "@/lib/properties/static-catalog"
 import { inferHighlightAmenities } from "@/lib/dashboard/card-highlights"
 import { createDefaultPropertyIncludes } from "@/lib/dashboard/default-includes"
 import { parseBathrooms } from "@/lib/dashboard/property-content"
@@ -32,9 +32,9 @@ export function createSeedProperties(): DashboardProperty[] {
       priceLabel,
       currency,
       status: "published" as const,
+      stayType: getStaticPropertyStayType(product.id),
       featured: index < 6,
       featuredOrder: index < 6 ? index + 1 : null,
-      badge: product.badge,
       amenities: product.amenities,
       highlightAmenities: inferHighlightAmenities(product.materials, product.amenities),
       customAmenityIds: [],

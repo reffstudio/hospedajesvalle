@@ -43,7 +43,6 @@ export function mapDashboardPropertyToPublic(
     name: property.name.trim() || (locale === "es" ? "Propiedad" : "Property"),
     price: formatPropertyPrice(property.priceLabel, property.currency) || (locale === "es" ? "Precio por noche" : "Price per night"),
     image: resolvePropertyCoverUrl(property.images),
-    badge: property.badge ?? undefined,
     materials: buildCardHighlights(
       {
         bedrooms: property.bedrooms,
@@ -64,6 +63,7 @@ export function mapDashboardPropertyToPublic(
     dimensions: formatDimensionsLabel(property, locale),
     amenities: property.amenities,
     includes: property.includes,
+    stayType: property.stayType ?? "private",
     status: meta?.status ?? ("status" in property ? property.status : "published"),
     featured: meta?.featured ?? ("featured" in property ? property.featured : false),
     featuredOrder: meta?.featuredOrder ?? ("featuredOrder" in property ? property.featuredOrder : null),
@@ -77,7 +77,6 @@ export type PropertyPreviewProduct = Pick<
   | "name"
   | "price"
   | "image"
-  | "badge"
   | "materials"
   | "amenityItems"
   | "quickLookImages"
@@ -106,7 +105,6 @@ export function mapDashboardPropertyToPreview(
     name: mapped.name,
     price: mapped.price,
     image: mapped.image,
-    badge: mapped.badge,
     materials: mapped.materials,
     amenityItems: mapped.amenityItems,
     quickLookImages: mapped.quickLookImages,

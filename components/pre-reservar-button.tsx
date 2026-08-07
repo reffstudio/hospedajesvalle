@@ -10,9 +10,11 @@ const ease = [0.21, 0.47, 0.32, 0.98] as const
 type PreReservarButtonProps = {
   variant: "hero" | "nav"
   className?: string
+  /** Always show the full label (used for centered mobile nav CTA). */
+  prominent?: boolean
 }
 
-export function PreReservarButton({ variant, className }: PreReservarButtonProps) {
+export function PreReservarButton({ variant, className, prominent = false }: PreReservarButtonProps) {
   const { open } = usePreReservation()
   const { t } = useLanguage()
   const isHero = variant === "hero"
@@ -21,9 +23,8 @@ export function PreReservarButton({ variant, className }: PreReservarButtonProps
     <motion.button
       type="button"
       onClick={() => open()}
-      initial={isHero ? { opacity: 0, y: 20 } : false}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
-      exit={isHero ? { opacity: 0, y: -14 } : undefined}
       transition={{ duration: 0.35, ease }}
       whileHover={{ scale: 1.04, y: -1 }}
       whileTap={{ scale: 0.97 }}
@@ -36,7 +37,7 @@ export function PreReservarButton({ variant, className }: PreReservarButtonProps
       <span className="pre-reservar-btn__glow pointer-events-none absolute inset-0 rounded-full" aria-hidden />
       <span className="pre-reservar-btn__shimmer pointer-events-none absolute inset-0 rounded-full" aria-hidden />
       <span className="relative z-10">
-        {isHero ? (
+        {isHero || prominent ? (
           t.common.preReserve
         ) : (
           <>

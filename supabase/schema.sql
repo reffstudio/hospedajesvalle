@@ -16,9 +16,9 @@ create table if not exists public.properties (
   price_label text not null,
   currency text not null check (currency in ('MXN', 'USD')),
   status text not null default 'draft' check (status in ('published', 'hidden', 'draft')),
+  stay_type text not null default 'private' check (stay_type in ('private', 'shared', 'events')),
   featured boolean not null default false,
   featured_order int,
-  badge text check (badge in ('Nuevo', 'Popular', 'Limitado')),
   max_guests int not null default 2,
   bedrooms int not null default 1,
   full_bathrooms int not null default 1,
@@ -29,6 +29,7 @@ create table if not exists public.properties (
 );
 
 create index if not exists properties_status_idx on public.properties (status);
+create index if not exists properties_stay_type_idx on public.properties (stay_type);
 create index if not exists properties_featured_idx on public.properties (featured, featured_order);
 
 -- ---------------------------------------------------------------------------

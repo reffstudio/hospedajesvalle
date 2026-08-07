@@ -1,6 +1,7 @@
 import type { AmenityListItem } from "@/lib/amenity-list"
-import type { PropertyBadge, PropertyStatus } from "@/lib/dashboard/types"
+import type { PropertyStatus } from "@/lib/dashboard/types"
 import type { AmenityId } from "@/lib/property-amenities"
+import type { PropertyStayType } from "@/lib/property-stay-type"
 import type { Locale } from "@/lib/i18n/types"
 
 /**
@@ -14,7 +15,6 @@ export type PublicProperty = {
   name: string
   price: string
   image: string
-  badge?: NonNullable<PropertyBadge>
   /** Card highlight chips (bedrooms, baths, starred amenities). */
   materials: string[]
   amenityItems: AmenityListItem[]
@@ -22,6 +22,7 @@ export type PublicProperty = {
   dimensions: string
   amenities: AmenityId[]
   includes: string[]
+  stayType: PropertyStayType
   status: PropertyStatus
   featured: boolean
   featuredOrder: number | null

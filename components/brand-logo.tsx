@@ -1,8 +1,11 @@
 "use client"
 
+import { type MouseEvent } from "react"
 import { motion } from "framer-motion"
 import Image from "next/image"
+import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { scrollToHeroStart } from "@/lib/hero-featured-scroll"
 import { useLanguage } from "./language-provider"
 
 const ease = [0.21, 0.47, 0.32, 0.98] as const
@@ -27,14 +30,23 @@ type BrandLogoProps = {
 }
 
 export function BrandLogo({ variant, className, href = "/" }: BrandLogoProps) {
+  const pathname = usePathname()
   const { t } = useLanguage()
   const motionProps = variant === "hero" ? heroMotion : navMotion
+
+  const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (variant === "nav" && pathname === "/" && href === "/") {
+      event.preventDefault()
+      scrollToHeroStart()
+    }
+  }
 
   return (
     <motion.a
       href={href}
       aria-label={t.common.brandAria}
       className={cn("block", className)}
+      onClick={handleClick}
       {...motionProps}
     >
       <Image
@@ -46,8 +58,8 @@ export function BrandLogo({ variant, className, href = "/" }: BrandLogoProps) {
         className={cn(
           "object-contain mx-auto",
           variant === "hero"
-            ? "h-32 w-32 sm:h-40 sm:w-40 md:h-44 md:w-44 lg:h-52 lg:w-52 drop-shadow-lg"
-            : "h-14 w-14 max-lg:h-11 max-lg:w-11 lg:h-16 lg:w-16",
+            ? "h-auto w-auto drop-shadow-lg"
+            : "h-11 w-11 md:h-14 md:w-14 lg:h-16 lg:w-16",
         )}
       />
     </motion.a>

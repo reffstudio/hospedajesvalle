@@ -1,11 +1,6 @@
 "use client"
 
-import { useCtaInNav } from "./hero-scroll-context"
-import { LanguageSwitcher } from "./language-switcher"
-
+/** Language switcher lives in the fixed header on all pages. */
 export function SiteLanguageSwitcher() {
-  const ctaInNav = useCtaInNav()
-
-  if (ctaInNav) return null
-  return <LanguageSwitcher variant="fixed" />
+  return null
 }

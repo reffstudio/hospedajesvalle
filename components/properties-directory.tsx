@@ -8,12 +8,19 @@ import type { PublicProperty } from "@/lib/properties/types"
 import { amenitiesForDiscoverFilter, isDiscoverFilterCategory } from "@/lib/properties/discover-filter"
 import { PROPERTY_FILTER_SESSION_KEY } from "@/lib/data/storage-keys"
 import { AMENITY_IDS, filterProductsByAmenities, type AmenityId } from "@/lib/property-amenities"
+import {
+  PROPERTY_STAY_TYPES,
+  filterProductsByStayType,
+  getStayTypeLabel,
+  type PropertyStayType,
+} from "@/lib/property-stay-type"
 import { useLanguage } from "./language-provider"
 import { cn } from "@/lib/utils"
 
 export function PropertiesDirectory() {
   const { locale, t, tf } = useLanguage()
   const products = getPublishedProperties(locale)
+  const [selectedStayTypes, setSelectedStayTypes] = useState<PropertyStayType[]>([])
   const [selectedAmenities, setSelectedAmenities] = useState<AmenityId[]>([])
   const [selectedProduct, setSelectedProduct] = useState<PublicProperty | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -28,17 +35,34 @@ export function PropertiesDirectory() {
     }
   }, [])
 
-  const filteredProducts = useMemo(
-    () => filterProductsByAmenities(products, selectedAmenities),
-    [products, selectedAmenities],
+  const filteredProducts = useMemo(() => {
+    const byStayType = filterProductsByStayType(products, selectedStayTypes)
+    return filterProductsByAmenities(byStayType, selectedAmenities)
+  }, [products, selectedStayTypes, selectedAmenities])
+
+  const availableStayTypes = PROPERTY_STAY_TYPES.filter((stayType) =>
+    products.some((product) => product.stayType === stayType),
   )
 
   const availableAmenities = AMENITY_IDS.filter((id) => products.some((product) => product.amenities.includes(id)))
+
+  const hasActiveFilters = selectedStayTypes.length > 0 || selectedAmenities.length > 0
+
+  const toggleStayType = (stayType: PropertyStayType) => {
+    setSelectedStayTypes((current) =>
+      current.includes(stayType) ? current.filter((item) => item !== stayType) : [...current, stayType],
+    )
+  }
 
   const toggleAmenity = (id: AmenityId) => {
     setSelectedAmenities((current) =>
       current.includes(id) ? current.filter((amenity) => amenity !== id) : [...current, id],
     )
+  }
+
+  const clearFilters = () => {
+    setSelectedStayTypes([])
+    setSelectedAmenities([])
   }
 
   const handleQuickLook = (product: PublicProperty) => {
@@ -61,43 +85,70 @@ export function PropertiesDirectory() {
           <p className="mt-4 text-pretty text-lg text-valle-forest-600">{t.propertiesPage.subtitle}</p>
         </div>
 
-        <div className="mb-8">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm font-medium text-valle-forest-700">{t.propertiesPage.filtersLabel}</p>
-            {selectedAmenities.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setSelectedAmenities([])}
-                className="text-sm font-medium text-valle-wine-700 underline-offset-2 hover:underline"
-              >
-                {t.propertiesPage.clearFilters}
-              </button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {availableAmenities.map((id) => {
-              const label = t.amenities[id]
-              const isActive = selectedAmenities.includes(id)
-              return (
+        <div className="mb-8 space-y-6">
+          <div>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm font-medium text-valle-forest-700">{t.propertiesPage.stayTypeFiltersLabel}</p>
+              {hasActiveFilters && (
                 <button
-                  key={id}
                   type="button"
-                  onClick={() => toggleAmenity(id)}
-                  className={cn(
-                    "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
-                    isActive
-                      ? "border-valle-forest-800 bg-valle-forest-800 text-white"
-                      : "border-valle-sage-300 bg-white text-valle-forest-700 hover:border-valle-forest-400",
-                  )}
+                  onClick={clearFilters}
+                  className="text-sm font-medium text-valle-wine-700 underline-offset-2 hover:underline"
                 >
-                  {label}
+                  {t.propertiesPage.clearFilters}
                 </button>
-              )
-            })}
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {availableStayTypes.map((stayType) => {
+                const label = getStayTypeLabel(stayType, t.propertyStayTypes)
+                const isActive = selectedStayTypes.includes(stayType)
+                return (
+                  <button
+                    key={stayType}
+                    type="button"
+                    onClick={() => toggleStayType(stayType)}
+                    className={cn(
+                      "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+                      isActive
+                        ? "border-valle-wine-700 bg-valle-wine-700 text-white"
+                        : "border-valle-sage-300 bg-white text-valle-forest-700 hover:border-valle-forest-400",
+                    )}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
-          <p className="mt-4 text-sm text-valle-forest-500">
+          <div>
+            <p className="mb-3 text-sm font-medium text-valle-forest-700">{t.propertiesPage.amenityFiltersLabel}</p>
+            <div className="flex flex-wrap gap-2">
+              {availableAmenities.map((id) => {
+                const label = t.amenities[id]
+                const isActive = selectedAmenities.includes(id)
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => toggleAmenity(id)}
+                    className={cn(
+                      "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+                      isActive
+                        ? "border-valle-forest-800 bg-valle-forest-800 text-white"
+                        : "border-valle-sage-300 bg-white text-valle-forest-700 hover:border-valle-forest-400",
+                    )}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <p className="text-sm text-valle-forest-500">
             {tf(t.propertiesPage.showing, { count: filteredProducts.length })}
           </p>
         </div>

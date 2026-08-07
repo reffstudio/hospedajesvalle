@@ -7,7 +7,9 @@ import { usePropertyStore } from "@/lib/dashboard/property-store"
 import { buildPropertyPreviewProduct, getPropertyPreviewIssues } from "@/lib/dashboard/property-preview"
 import { createDefaultPropertyIncludes } from "@/lib/dashboard/default-includes"
 import { ensureUniquePropertySlug, slugify } from "@/lib/dashboard/property-slug"
-import type { DashboardPropertyInput, PropertyBadge, PropertyStatus } from "@/lib/dashboard/types"
+import type { DashboardPropertyInput, PropertyStatus } from "@/lib/dashboard/types"
+import type { PropertyStayType } from "@/lib/property-stay-type"
+import { PROPERTY_STAY_TYPES } from "@/lib/property-stay-type"
 import { AmenityFeaturePicker } from "./amenity-feature-picker"
 import { PropertyIncludesEditor } from "./property-includes-editor"
 import { CapacityPreview } from "./capacity-preview"
@@ -16,8 +18,13 @@ import { PriceCurrencyInput } from "./price-currency-input"
 import { PropertyFormFloatingBar } from "./property-form-floating-bar"
 import { PropertyPreviewModal } from "./property-preview-modal"
 
-const badgeOptions: PropertyBadge[] = ["Nuevo", "Popular", "Limitado", null]
 const statusOptions: PropertyStatus[] = ["published", "hidden", "draft"]
+
+const stayTypeLabels: Record<PropertyStayType, string> = {
+  private: "Privada",
+  shared: "Compartida",
+  events: "Eventos",
+}
 
 const emptyProperty = (): DashboardPropertyInput => ({
   slug: "",
@@ -25,9 +32,9 @@ const emptyProperty = (): DashboardPropertyInput => ({
   priceLabel: "",
   currency: "MXN",
   status: "draft",
+  stayType: "private",
   featured: false,
   featuredOrder: null,
-  badge: null,
   amenities: [],
   highlightAmenities: [],
   customAmenityIds: [],
@@ -184,8 +191,43 @@ export function PropertyForm({ mode, propertyId }: PropertyFormProps) {
           onCurrencyChange={(currency) => setForm({ ...form, currency })}
         />
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <label className="dashboard-field">
+            <span>Tipo de hospedaje</span>
+            <select
+              className="dashboard-input"
+              value={form.stayType}
+              onChange={(event) => setForm({ ...form, stayType: event.target.value as PropertyStayType })}
+            >
+              {PROPERTY_STAY_TYPES.map((stayType) => (
+                <option key={stayType} value={stayType}>
+                  {stayTypeLabels[stayType]}
+                </option>
+              ))}
+            </select>
+            <span className="text-xs text-valle-forest-500">
+              Privada: propiedad completa · Compartida: espacios compartidos · Eventos: venue para eventos.
+            </span>
+          </label>
+
+          <label className="dashboard-field">
+            <span>Estado</span>
+            <select
+              className="dashboard-input"
+              value={form.status}
+              onChange={(event) => setForm({ ...form, status: event.target.value as PropertyStatus })}
+            >
+              {statusOptions.map((status) => (
+                <option key={status} value={status}>
+                  {status === "published" ? "Pública" : status === "hidden" ? "Oculta" : "Borrador"}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <label className="dashboard-field md:col-span-2">
             <span>Slug / ID URL</span>
             <input
               className="dashboard-input"
@@ -227,44 +269,6 @@ export function PropertyForm({ mode, propertyId }: PropertyFormProps) {
                 Personalizar slug
               </button>
             ) : null}
-          </label>
-
-          <label className="dashboard-field">
-            <span>Estado</span>
-            <select
-              className="dashboard-input"
-              value={form.status}
-              onChange={(event) => setForm({ ...form, status: event.target.value as PropertyStatus })}
-            >
-              {statusOptions.map((status) => (
-                <option key={status} value={status}>
-                  {status === "published" ? "Pública" : status === "hidden" ? "Oculta" : "Borrador"}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="dashboard-field">
-            <span>Badge</span>
-            <select
-              className="dashboard-input"
-              value={form.badge ?? ""}
-              onChange={(event) =>
-                setForm({
-                  ...form,
-                  badge: (event.target.value || null) as PropertyBadge,
-                })
-              }
-            >
-              <option value="">Sin badge</option>
-              {badgeOptions
-                .filter((badge): badge is NonNullable<PropertyBadge> => badge !== null)
-                .map((badge) => (
-                  <option key={badge} value={badge}>
-                    {badge}
-                  </option>
-                ))}
-            </select>
           </label>
         </div>
 

@@ -1,26 +1,89 @@
 "use client"
 
 import { motion, useTransform, AnimatePresence } from "framer-motion"
-import { useRef, useState, useEffect } from "react"
+import { useRef, useState, useEffect, useLayoutEffect } from "react"
 import Image from "next/image"
 import { MapPin, Home, ShieldCheck, ChevronDown } from "lucide-react"
 import { Reveal } from "./reveal"
 import { PropertiesCarousel } from "./properties-carousel"
 import { QuickLookModal } from "./quick-look-modal"
 import { getFeaturedCarouselProperties, getRoundedPropertyDisplayCount } from "@/lib/properties/queries"
+import {
+  HERO_SCROLL_RESET_EVENT,
+} from "@/lib/hero-featured-scroll"
 import { useHeroScrollProgress, useCtaInNav } from "./hero-scroll-context"
 import { useLanguage } from "./language-provider"
 import { PreReservarButton } from "./pre-reservar-button"
 import { BrandLogo } from "./brand-logo"
 
-export function HeroSection() {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const ctaInNav = useCtaInNav()
-  const { locale, t, tf } = useLanguage()
-  const featuredProducts = getFeaturedCarouselProperties(locale)
+function HeroChromeStatsRow() {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const rowRef = useRef<HTMLDivElement>(null)
+  const [scale, setScale] = useState(1)
+  const { t, tf } = useLanguage()
   const propertiesCountLabel = tf(t.hero.propertiesCount, {
     count: getRoundedPropertyDisplayCount(),
   })
+
+  useLayoutEffect(() => {
+    const wrap = wrapRef.current
+    const row = rowRef.current
+    if (!wrap || !row) return
+
+    const fit = () => {
+      setScale(1)
+      requestAnimationFrame(() => {
+        const available = wrap.clientWidth
+        const needed = row.scrollWidth
+        if (available <= 0 || needed <= 0) return
+        setScale(needed > available ? Math.max(0.72, available / needed) : 1)
+      })
+    }
+
+    fit()
+    const observer = new ResizeObserver(fit)
+    observer.observe(wrap)
+    observer.observe(row)
+    window.addEventListener("resize", fit)
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener("resize", fit)
+    }
+  }, [propertiesCountLabel, t.hero.certifiedHost, t.hero.location])
+
+  const statClass =
+    "flex shrink-0 items-center gap-[clamp(0.2rem,0.9vw,0.375rem)] whitespace-nowrap font-medium leading-none"
+
+  return (
+    <div ref={wrapRef} className="w-full overflow-hidden">
+      <div
+        ref={rowRef}
+        className="hero-chrome-stats mx-auto flex w-max max-w-none items-center justify-center gap-x-[clamp(0.35rem,2vw,2rem)] text-white/90 drop-shadow-[0_1px_8px_rgba(0,0,0,0.5)]"
+        style={scale < 1 ? { transform: `scale(${scale})`, transformOrigin: "center top" } : undefined}
+      >
+        <div className={statClass}>
+          <MapPin className="h-[clamp(0.625rem,2.2vw,1rem)] w-[clamp(0.625rem,2.2vw,1rem)] shrink-0 text-valle-gold-400" />
+          <span>{t.hero.location}</span>
+        </div>
+        <div className={statClass}>
+          <Home className="h-[clamp(0.625rem,2.2vw,1rem)] w-[clamp(0.625rem,2.2vw,1rem)] shrink-0 text-valle-moss-400" />
+          <span>{propertiesCountLabel}</span>
+        </div>
+        <div className={statClass}>
+          <ShieldCheck className="h-[clamp(0.625rem,2.2vw,1rem)] w-[clamp(0.625rem,2.2vw,1rem)] shrink-0 text-valle-olive-400" />
+          <span>{t.hero.certifiedHost}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function HeroSection() {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const ctaInNav = useCtaInNav()
+  const { locale, t } = useLanguage()
+  const featuredProducts = getFeaturedCarouselProperties(locale)
 
   useEffect(() => {
     featuredProducts.forEach((product) => {
@@ -32,6 +95,13 @@ export function HeroSection() {
   // Deterministic pin progress: 0 when the track's top hits the viewport top,
   // 1 exactly when the sticky pin releases (track scrolled by its height minus one viewport).
   const scrollYProgress = useHeroScrollProgress()
+  useEffect(() => {
+    const onReset = () => scrollYProgress.set(0)
+
+    window.addEventListener(HERO_SCROLL_RESET_EVENT, onReset)
+    return () => window.removeEventListener(HERO_SCROLL_RESET_EVENT, onReset)
+  }, [scrollYProgress])
+
   useEffect(() => {
     let frame = 0
 
@@ -94,19 +164,19 @@ export function HeroSection() {
   const overlayOpacity = useTransform(scrollYProgress, [0, 0.32, 0.5, 0.6], [0.08, 0.3, 0.55, 0.68])
 
   // Headline lifts up and fades out early in the descent.
-  const contentY = useTransform(scrollYProgress, [0.08, 0.42], [0, -140])
-  const contentOpacity = useTransform(scrollYProgress, [0.08, 0.35], [1, 0])
-  const contentScale = useTransform(scrollYProgress, [0.08, 0.42], [1, 1.12])
+  const contentY = useTransform(scrollYProgress, [0.08, 0.38], [0, -140])
+  const contentOpacity = useTransform(scrollYProgress, [0.08, 0.30], [1, 0])
+  const contentScale = useTransform(scrollYProgress, [0.08, 0.38], [1, 1.12])
 
   // Info strip and scroll hint fade quickly once the descent begins.
   const chromeOpacity = useTransform(scrollYProgress, [0, 0.14], [1, 0])
 
-  // Properties materialize as the descent finishes, then hold fully visible until the pin releases.
-  const propsOpacity = useTransform(scrollYProgress, [0.42, 0.6], [0, 1])
-  const propsScale = useTransform(scrollYProgress, [0.42, 0.66], [0.86, 1])
-  const propsY = useTransform(scrollYProgress, [0.42, 0.66], [60, 0])
+  // Properties crossfade in as hero copy exits — no empty gap mid-scroll.
+  const propsOpacity = useTransform(scrollYProgress, [0.16, 0.38], [0, 1])
+  const propsScale = useTransform(scrollYProgress, [0.16, 0.42], [0.9, 1])
+  const propsY = useTransform(scrollYProgress, [0.16, 0.42], [36, 0])
   // Only capture clicks once the cards are visible.
-  const propsPointer = useTransform(scrollYProgress, (v) => (v > 0.58 ? "auto" : "none"))
+  const propsPointer = useTransform(scrollYProgress, (v) => (v > 0.34 ? "auto" : "none"))
 
   const AnimatedText = ({ text, delay = 0 }: { text: string; delay?: number }) => {
     if (!text) return null
@@ -176,47 +246,56 @@ export function HeroSection() {
           />
         </motion.div>
 
-        {/* Logo + headline + CTA — sits inside the valley opening */}
-        <div className="pointer-events-none absolute inset-x-0 top-[max(16%,calc(var(--site-header-height)+0.75rem))] z-10 flex justify-center sm:top-[max(14%,calc(var(--site-header-height)+0.75rem))] lg:top-[12%]">
-          <div className="pointer-events-auto">
-            <AnimatePresence mode="wait">
-              {!ctaInNav && <BrandLogo key="hero-logo" variant="hero" />}
-            </AnimatePresence>
-          </div>
-        </div>
-
+        {/* Logo + headline + CTA — single column, vertically centered in valley */}
         <motion.div
-          className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center pt-[calc(var(--site-header-height)+1.5rem)] sm:pt-[calc(var(--site-header-height)+2rem)] lg:pt-32"
+          className="pointer-events-none absolute inset-x-0 top-[var(--site-header-height)] bottom-[calc(var(--hero-ridge-clearance)+var(--hero-bottom-chrome-height))] z-10 flex items-center justify-center overflow-hidden px-4 sm:px-6"
           style={{ y: contentY, opacity: contentOpacity, scale: contentScale }}
         >
-          <div className="container-custom pointer-events-auto px-4 text-center text-white sm:px-6">
-            <Reveal>
-              <h1 className="@container mx-auto mb-6 w-full max-w-[94vw] drop-shadow-[0_4px_40px_rgba(0,0,0,0.65)] sm:max-w-none">
-                <span className="block text-balance text-[clamp(1.15rem,4.8vw,2.75rem)] font-black leading-[1.05] tracking-tight text-white">
-                  <AnimatedText text={t.hero.title1} delay={0.5} />
-                </span>
-                <span className="font-display mx-auto mt-1.5 block w-full text-center sm:mt-2">
-                  <span className="inline-block max-w-full whitespace-nowrap text-[clamp(1.45rem,10.5cqw,4.75rem)] font-light italic leading-none tracking-[0.01em] text-white">
-                    <AnimatedText text={t.hero.title2} delay={1.1} />
-                  </span>
-                </span>
-              </h1>
-            </Reveal>
-
-            <Reveal delay={0.2}>
-              <motion.p
-                className="text-lg md:text-xl text-white/90 mb-8 leading-relaxed max-w-2xl mx-auto"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.7, ease: [0.21, 0.47, 0.32, 0.98] }}
-              >
-                {t.hero.subtitle}
-              </motion.p>
-            </Reveal>
-
+          <div className="container-custom pointer-events-auto flex w-full max-h-full flex-col items-center justify-center text-center text-white">
             <AnimatePresence mode="wait">
-              {!ctaInNav && <PreReservarButton key="hero-cta" variant="hero" />}
+              {!ctaInNav && <BrandLogo key="hero-logo" variant="hero" className="hero-logo-mark shrink-0" />}
             </AnimatePresence>
+
+            <div className="w-full shrink-0 pt-[var(--hero-logo-gap)]">
+              <Reveal className="w-full">
+                <h1 className="mx-auto mb-4 w-full drop-shadow-[0_4px_40px_rgba(0,0,0,0.65)] sm:mb-5 md:mb-6">
+                  <span className="flex w-full justify-center text-[clamp(1.15rem,4.8vw,2.75rem)] font-black leading-[1.05] tracking-tight text-white">
+                    <AnimatedText text={t.hero.title1} delay={0.5} />
+                  </span>
+                  <span className="font-display mt-1.5 flex w-full justify-center sm:mt-2">
+                    <span className="whitespace-nowrap text-[clamp(1.35rem,min(7vw,7vh),4.75rem)] font-light italic leading-none tracking-[0.01em] text-white">
+                      <AnimatedText text={t.hero.title2} delay={1.1} />
+                    </span>
+                  </span>
+                </h1>
+              </Reveal>
+
+              <Reveal delay={0.2} className="w-full">
+                <motion.p
+                  className="mx-auto mb-6 max-w-2xl text-pretty text-base leading-relaxed text-white/90 drop-shadow-[0_2px_16px_rgba(0,0,0,0.75)] sm:mb-7 sm:text-lg md:mb-8 md:text-xl"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.7, ease: [0.21, 0.47, 0.32, 0.98] }}
+                >
+                  {t.hero.subtitle}
+                </motion.p>
+              </Reveal>
+
+              <AnimatePresence>
+                {!ctaInNav && (
+                  <motion.div
+                    key="hero-pre-reservar"
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.92, y: -10 }}
+                    transition={{ duration: 0.28, ease: [0.21, 0.47, 0.32, 0.98] }}
+                    className="flex justify-center"
+                  >
+                    <PreReservarButton variant="hero" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </motion.div>
 
@@ -243,8 +322,36 @@ export function HeroSection() {
           </motion.div>
         </motion.div>
 
+        {/* Bottom bar — on top of mountains at the lower edge */}
+        <motion.div
+          className="absolute bottom-0 left-0 right-0 z-30 flex justify-center"
+          style={{ opacity: chromeOpacity }}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 1.2, ease: [0.21, 0.47, 0.32, 0.98] }}
+            className="mb-[max(1.25rem,env(safe-area-inset-bottom))] w-full px-[clamp(0.375rem,2vw,3rem)] md:container-custom md:px-[var(--space-6)]"
+          >
+            <div className="flex flex-col items-center gap-3 sm:gap-4">
+              <HeroChromeStatsRow />
+
+              <div className="flex flex-col items-center gap-1 text-white/80 drop-shadow-[0_1px_8px_rgba(0,0,0,0.5)]">
+                <span className="text-[10px] tracking-[0.25em] uppercase sm:text-xs">{t.hero.diveIn}</span>
+                <motion.div
+                  animate={{ y: [0, 6, 0] }}
+                  transition={{ duration: 1.6, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+                >
+                  <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5" />
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+
         {/* Properties — appear as the descent completes */}
         <motion.div
+          id="propiedades-destacadas"
           className="pointer-events-none absolute inset-x-0 bottom-0 top-[var(--site-header-height)] z-[25] flex items-center pb-4 sm:pb-6"
           style={{ opacity: propsOpacity, scale: propsScale, y: propsY }}
         >
@@ -265,51 +372,6 @@ export function HeroSection() {
           </div>
         </motion.div>
 
-        {/* Bottom bar — scroll hint + info strip */}
-        <motion.div
-          className="absolute bottom-0 left-0 right-0 z-30 flex justify-center"
-          style={{ opacity: chromeOpacity }}
-        >
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1.2, ease: [0.21, 0.47, 0.32, 0.98] }}
-            className="container-custom mb-6 w-full"
-          >
-            <div className="flex flex-col items-center gap-3 sm:gap-4">
-              <div className="flex w-full max-w-full flex-nowrap items-center justify-center gap-x-[clamp(0.5rem,2.5vw,2rem)] text-white/90 drop-shadow-[0_1px_8px_rgba(0,0,0,0.5)]">
-                <div className="flex shrink-0 items-center gap-[clamp(0.25rem,1vw,0.375rem)]">
-                  <MapPin className="h-[clamp(0.75rem,2.5vw,1rem)] w-[clamp(0.75rem,2.5vw,1rem)] shrink-0 text-valle-gold-400" />
-                  <span className="whitespace-nowrap text-[clamp(0.5625rem,2.4vw,0.875rem)] font-medium leading-none">
-                    {t.hero.location}
-                  </span>
-                </div>
-                <div className="flex shrink-0 items-center gap-[clamp(0.25rem,1vw,0.375rem)]">
-                  <Home className="h-[clamp(0.75rem,2.5vw,1rem)] w-[clamp(0.75rem,2.5vw,1rem)] shrink-0 text-valle-moss-400" />
-                  <span className="whitespace-nowrap text-[clamp(0.5625rem,2.4vw,0.875rem)] font-medium leading-none">
-                    {propertiesCountLabel}
-                  </span>
-                </div>
-                <div className="flex shrink-0 items-center gap-[clamp(0.25rem,1vw,0.375rem)]">
-                  <ShieldCheck className="h-[clamp(0.75rem,2.5vw,1rem)] w-[clamp(0.75rem,2.5vw,1rem)] shrink-0 text-valle-olive-400" />
-                  <span className="whitespace-nowrap text-[clamp(0.5625rem,2.4vw,0.875rem)] font-medium leading-none">
-                    {t.hero.certifiedHost}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center gap-1 text-white/80 drop-shadow-[0_1px_8px_rgba(0,0,0,0.5)]">
-                <span className="text-[10px] tracking-[0.25em] uppercase sm:text-xs">{t.hero.diveIn}</span>
-                <motion.div
-                  animate={{ y: [0, 6, 0] }}
-                  transition={{ duration: 1.6, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-                >
-                  <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5" />
-                </motion.div>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
       </div>
 
       <QuickLookModal product={selectedProduct} isOpen={isModalOpen} onClose={closeModal} />

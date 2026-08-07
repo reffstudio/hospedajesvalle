@@ -1,9 +1,8 @@
 import type { AmenityId } from "@/lib/property-amenities"
+import type { PropertyStayType } from "@/lib/property-stay-type"
 import type { CustomAmenityIconId } from "@/lib/custom-amenity-icons"
 
 export type PropertyStatus = "published" | "hidden" | "draft"
-
-export type PropertyBadge = "Nuevo" | "Popular" | "Limitado" | null
 
 export type PropertyCurrency = "MXN" | "USD"
 
@@ -32,9 +31,10 @@ export type DashboardProperty = {
   priceLabel: string
   currency: PropertyCurrency
   status: PropertyStatus
+  /** Private whole property, shared spaces, or event venue. */
+  stayType: PropertyStayType
   featured: boolean
   featuredOrder: number | null
-  badge: PropertyBadge
   amenities: AmenityId[]
   highlightAmenities: AmenityId[]
   customAmenityIds: string[]

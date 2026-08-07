@@ -9,7 +9,6 @@ import {
   getPublishedPropertyCount,
   getRoundedPropertyDisplayCount,
 } from "@/lib/properties/queries"
-import { getBadgeLabel as getStaticBadgeLabel } from "@/lib/properties/static-catalog"
 
 export type FeaturedProduct = PublicProperty
 
@@ -22,11 +21,4 @@ export { getFeaturedCarouselProperties, getPublishedProperties, getPublishedProp
 
 export function getPropertyCount(): number {
   return getPublishedPropertyCount()
-}
-
-export function getBadgeLabel(
-  badge: NonNullable<FeaturedProduct["badge"]>,
-  locale: Locale,
-): string {
-  return getStaticBadgeLabel(badge, locale)
 }

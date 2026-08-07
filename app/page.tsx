@@ -23,12 +23,14 @@ import { OwnersSection } from "@/components/owners-section"
 import { Footer } from "@/components/footer"
 import { PreReservationProvider } from "@/components/pre-reservation-context"
 import { PreReservationModal } from "@/components/pre-reservation-modal"
+import { HomeHashScroll } from "@/components/home-hash-scroll"
 
 export default function HomePage() {
   return (
     <LanguageProvider>
       <PreReservationProvider>
         <HeroScrollProvider>
+          <HomeHashScroll />
           <SiteLanguageSwitcher />
           <main className="min-h-screen">
             <Header />

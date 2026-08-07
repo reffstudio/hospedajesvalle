@@ -32,6 +32,7 @@ import type {
 } from "@/lib/dashboard/types"
 import type { CustomAmenityIconId } from "@/lib/custom-amenity-icons"
 import type { AmenityId } from "@/lib/property-amenities"
+import type { PropertyStayType } from "@/lib/property-stay-type"
 
 import {
   DASHBOARD_CUSTOM_AMENITIES_KEY,
@@ -199,9 +200,9 @@ function normalizeProperty(
       priceLabel: raw.currency ? normalizePriceLabel(legacyPrice) : parsedPrice.priceLabel,
       currency: raw.currency ?? parsedPrice.currency,
       status: raw.status ?? "draft",
+      stayType: raw.stayType ?? "private",
       featured: raw.featured ?? false,
       featuredOrder: raw.featuredOrder ?? null,
-      badge: raw.badge ?? null,
       amenities,
       highlightAmenities: highlightData.highlightAmenities,
       customAmenityIds: highlightData.customAmenityIds,

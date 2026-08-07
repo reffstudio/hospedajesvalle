@@ -7,10 +7,19 @@ export function SiteChromeHeader() {
   const { t } = useLanguage()
 
   const navLinks = [
-    { name: t.nav.properties, href: "/propiedades", sectionId: "propiedades" },
-    { name: t.nav.experiences, href: "/#descubre-el-valle", sectionId: "descubre-el-valle" },
+    {
+      name: t.nav.properties,
+      mobileLabel: t.nav.propertiesMobile,
+      href: "/#propiedades-destacadas",
+      sectionId: "propiedades",
+    },
+    {
+      name: t.nav.experiences,
+      mobileLabel: t.nav.experiencesMobile,
+      href: "/#descubre-el-valle",
+      sectionId: "descubre-el-valle",
+    },
     { name: t.nav.reviews, href: "/#reviews", sectionId: "reviews" },
-    { name: t.nav.management, href: "/#administracion", sectionId: "administracion" },
   ]
 
   return (

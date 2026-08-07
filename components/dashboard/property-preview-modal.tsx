@@ -10,6 +10,7 @@ import { AmenityIconList } from "@/components/amenity-icon-list"
 import { getAmenityLabel } from "@/lib/amenity-catalog"
 import type { AmenityId } from "@/lib/property-amenities"
 import type { PropertyStatus } from "@/lib/dashboard/types"
+import type { PropertyPreviewProduct } from "@/lib/properties/map-to-public"
 import { cn } from "@/lib/utils"
 
 type PropertyPreviewModalProps = {

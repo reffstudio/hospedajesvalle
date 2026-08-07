@@ -7,6 +7,7 @@ import { ArrowDown, ArrowUp, Eye, EyeOff, Pencil, Plus, Star, Trash2 } from "luc
 import { formatPropertyPrice } from "@/lib/dashboard/price"
 import { usePropertyStore } from "@/lib/dashboard/property-store"
 import type { DashboardProperty, PropertyStatus } from "@/lib/dashboard/types"
+import type { PropertyStayType } from "@/lib/property-stay-type"
 import { cn } from "@/lib/utils"
 
 const statusLabels: Record<PropertyStatus, string> = {
@@ -19,6 +20,12 @@ const statusStyles: Record<PropertyStatus, string> = {
   published: "bg-emerald-50 text-emerald-800 ring-emerald-200",
   hidden: "bg-neutral-100 text-neutral-700 ring-neutral-200",
   draft: "bg-amber-50 text-amber-800 ring-amber-200",
+}
+
+const stayTypeLabels: Record<PropertyStayType, string> = {
+  private: "Privada",
+  shared: "Compartida",
+  events: "Eventos",
 }
 
 function getCover(property: DashboardProperty) {
@@ -178,6 +185,7 @@ export function PropertyListPage() {
             <thead>
               <tr className="border-b border-valle-sage-200 text-[11px] uppercase tracking-[0.14em] text-valle-forest-500">
                 <th className="px-3 py-3 font-semibold">Propiedad</th>
+                <th className="px-3 py-3 font-semibold">Tipo</th>
                 <th className="px-3 py-3 font-semibold">Estado</th>
                 <th className="px-3 py-3 font-semibold">Destacada</th>
                 <th className="px-3 py-3 font-semibold">Amenidades</th>
@@ -199,6 +207,11 @@ export function PropertyListPage() {
                         </p>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-3 py-4">
+                    <span className="inline-flex rounded-full bg-valle-sage-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-valle-forest-700 ring-1 ring-valle-sage-200">
+                      {stayTypeLabels[property.stayType]}
+                    </span>
                   </td>
                   <td className="px-3 py-4">
                     <span
