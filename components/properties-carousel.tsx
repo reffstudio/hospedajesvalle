@@ -88,7 +88,7 @@ export function PropertiesCarousel({ properties, onQuickLook }: PropertiesCarous
           onClick={() => scrollToIndex(activeIndex - 1)}
           disabled={activeIndex === 0}
           aria-label={t.carousel.prev}
-          className="absolute left-2 lg:left-3 top-1/2 -translate-y-1/2 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-valle-forest-900 shadow-lg backdrop-blur transition-all hover:bg-white disabled:opacity-0 disabled:pointer-events-none"
+          className="absolute left-3 sm:left-4 md:left-[calc(var(--space-6)+0.25rem)] top-1/2 -translate-y-1/2 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-valle-forest-900 shadow-lg backdrop-blur transition-all hover:bg-white disabled:opacity-0 disabled:pointer-events-none"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -97,7 +97,7 @@ export function PropertiesCarousel({ properties, onQuickLook }: PropertiesCarous
           onClick={() => scrollToIndex(activeIndex + 1)}
           disabled={activeIndex === properties.length - 1}
           aria-label={t.carousel.next}
-          className="absolute right-2 lg:right-3 top-1/2 -translate-y-1/2 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-valle-forest-900 shadow-lg backdrop-blur transition-all hover:bg-white disabled:opacity-0 disabled:pointer-events-none"
+          className="absolute right-3 sm:right-4 md:right-[calc(var(--space-6)+0.25rem)] top-1/2 -translate-y-1/2 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-valle-forest-900 shadow-lg backdrop-blur transition-all hover:bg-white disabled:opacity-0 disabled:pointer-events-none"
         >
           <ChevronRight className="h-5 w-5" />
         </button>
@@ -105,17 +105,18 @@ export function PropertiesCarousel({ properties, onQuickLook }: PropertiesCarous
         {/* Track */}
         <div
           ref={scrollRef}
-          className="flex gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory px-4 pb-2 lg:px-14 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          className="flex gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory px-5 pb-2 sm:px-6 md:px-[var(--space-6)] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         >
           {properties.map((property) => (
             <div
               key={property.id}
               data-carousel-item
-              className="snap-start shrink-0 w-[78vw] sm:w-[360px] lg:w-[380px]"
+              className="snap-start shrink-0 w-[72vw] sm:w-[360px] lg:w-[380px]"
             >
               <ProductCard product={property} onQuickLook={onQuickLook} priority />
             </div>
           ))}
+          <div className="snap-start shrink-0 w-5 sm:w-6 md:w-[var(--space-6)]" aria-hidden />
         </div>
       </div>
 
