@@ -2,20 +2,56 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { useMemo } from "react"
 import { Building2, CalendarCheck, ExternalLink, LayoutGrid, LogOut } from "lucide-react"
+import { useLeadStore } from "@/lib/dashboard/lead-store"
+import { usePropertyInquiryStore } from "@/lib/dashboard/property-inquiry-store"
 import { cn } from "@/lib/utils"
 import { useDashboardAuth } from "./dashboard-auth-provider"
+import { DashboardNotifications } from "./dashboard-notifications"
+import { DashboardToaster } from "./dashboard-toaster"
 
 const navItems = [
-  { href: "/dashboard/properties", label: "Propiedades", icon: LayoutGrid },
-  { href: "/dashboard/pre-reservations", label: "Pre-reservas", icon: CalendarCheck },
-  { href: "/dashboard/property-inquiries", label: "Propietarios", icon: Building2 },
+  { href: "/dashboard/properties", label: "Propiedades", icon: LayoutGrid, countKey: null },
+  { href: "/dashboard/pre-reservations", label: "Pre-reservas", icon: CalendarCheck, countKey: "preReservations" as const },
+  {
+    href: "/dashboard/property-inquiries",
+    label: "Nuevas Propiedades",
+    icon: Building2,
+    countKey: "propertyInquiries" as const,
+  },
 ]
+
+function NavBadge({ count, active }: { count: number; active: boolean }) {
+  if (count <= 0) return null
+
+  return (
+    <span
+      className={cn(
+        "ml-auto inline-flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full px-1.5 text-[10px] font-bold leading-none",
+        active ? "bg-white text-valle-forest-900" : "bg-valle-wine-600 text-white",
+      )}
+      aria-label={`${count} sin revisar`}
+    >
+      {count > 99 ? "99+" : count}
+    </span>
+  )
+}
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { email, logout } = useDashboardAuth()
+  const { leads } = useLeadStore()
+  const { inquiries } = usePropertyInquiryStore()
+
+  const newCounts = useMemo(
+    () => ({
+      preReservations: leads.filter((lead) => lead.status === "new").length,
+      propertyInquiries: inquiries.filter((inquiry) => inquiry.status === "new").length,
+    }),
+    [leads, inquiries],
+  )
 
   const handleLogout = async () => {
     await logout()
@@ -24,8 +60,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const activeNavItem = navItems.find((item) => pathname.startsWith(item.href)) ?? navItems[0]
 
+  const getCount = (key: (typeof navItems)[number]["countKey"]) => {
+    if (!key) return 0
+    return newCounts[key]
+  }
+
   return (
-    <div className="min-h-screen bg-valle-sage-50">
+    <>
+      <DashboardToaster />
+      <DashboardNotifications />
+      <div className="min-h-screen bg-valle-sage-50">
       <div className="mx-auto flex min-h-screen max-w-[1440px]">
         <aside className="hidden w-64 shrink-0 border-r border-valle-sage-200/90 bg-valle-cream-50 lg:flex lg:flex-col">
           <div className="border-b border-valle-sage-200/90 px-5 py-5">
@@ -43,6 +87,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <nav className="flex-1 space-y-1 px-3 py-4">
             {navItems.map((item) => {
               const active = pathname.startsWith(item.href)
+              const count = getCount(item.countKey)
+
               return (
                 <Link
                   key={item.href}
@@ -55,7 +101,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   )}
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
-                  {item.label}
+                  <span className="min-w-0 truncate">{item.label}</span>
+                  <NavBadge count={count} active={active} />
                 </Link>
               )
             })}
@@ -108,18 +155,30 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <nav className="flex gap-2 overflow-x-auto px-4 pb-3">
               {navItems.map((item) => {
                 const active = pathname.startsWith(item.href)
+                const count = getCount(item.countKey)
+
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
+                      "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
                       active
                         ? "bg-valle-forest-900 text-white"
                         : "bg-white text-valle-forest-700 ring-1 ring-valle-sage-200",
                     )}
                   >
                     {item.label}
+                    {count > 0 ? (
+                      <span
+                        className={cn(
+                          "inline-flex min-h-[1rem] min-w-[1rem] items-center justify-center rounded-full px-1 text-[9px] font-bold",
+                          active ? "bg-white text-valle-forest-900" : "bg-valle-wine-600 text-white",
+                        )}
+                      >
+                        {count > 99 ? "99+" : count}
+                      </span>
+                    ) : null}
                   </Link>
                 )
               })}
@@ -130,5 +189,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     </div>
+    </>
   )
 }

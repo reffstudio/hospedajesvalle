@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { ChevronDown, ChevronUp, Home, Mail, MessageSquareText, Phone, RefreshCw } from "lucide-react"
 import {
   PROPERTY_INQUIRY_STATUSES,
@@ -80,17 +81,35 @@ function InquiryRow({
   isSyncing,
   onStatusChange,
   onSaveNotes,
+  highlighted = false,
 }: {
   inquiry: DashboardPropertyInquiryLead
   isSyncing: boolean
   onStatusChange: (status: DashboardPropertyInquiryLead["status"]) => Promise<void>
   onSaveNotes: (notes: string) => Promise<void>
+  highlighted?: boolean
 }) {
   const [expanded, setExpanded] = useState(false)
+  const rowRef = useRef<HTMLTableRowElement>(null)
+
+  useEffect(() => {
+    if (!highlighted) return
+    setExpanded(true)
+    window.requestAnimationFrame(() => {
+      rowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+    })
+  }, [highlighted, inquiry.id])
 
   return (
     <>
-      <tr className="border-b border-valle-sage-100 last:border-0">
+      <tr
+        ref={rowRef}
+        id={`inquiry-${inquiry.id}`}
+        className={cn(
+          "border-b border-valle-sage-100 last:border-0",
+          highlighted && "bg-valle-gold-500/10 ring-2 ring-inset ring-valle-gold-500/35",
+        )}
+      >
         <td className="px-3 py-4 align-top">
           <div className="space-y-1">
             <p className="font-medium text-valle-forest-900">{inquiry.name}</p>
@@ -162,8 +181,21 @@ function InquiryRow({
 }
 
 export function PropertyInquiryListPage() {
+  const searchParams = useSearchParams()
+  const highlightedEntryId = searchParams.get("entry")
   const { inquiries, isReady, isSyncing, error, updateInquiry, refresh } = usePropertyInquiryStore()
   const [filter, setFilter] = useState<PropertyInquiryStatusFilter>("all")
+
+  useEffect(() => {
+    if (!highlightedEntryId) return
+
+    const entry = inquiries.find((inquiry) => inquiry.id === highlightedEntryId)
+    if (!entry) return
+
+    if (filter !== "all" && entry.status !== filter) {
+      setFilter("all")
+    }
+  }, [highlightedEntryId, inquiries, filter])
 
   const counts = useMemo(() => {
     const result: Record<PropertyInquiryStatusFilter, number> = {
@@ -202,14 +234,14 @@ export function PropertyInquiryListPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-valle-forest-500">
-            Propietarios
+            Solicitudes
           </p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-valle-forest-900 sm:text-3xl">
-            ¿Tienes una propiedad?
+            Nuevas Propiedades
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-valle-forest-600">
-            Solicitudes de administración enviadas desde el formulario del sitio. Da seguimiento al contacto con cada
-            propietario.
+            Propietarios que quieren administrar su propiedad con Hospedajes Valle. Da seguimiento al contacto con
+            cada solicitud.
           </p>
         </div>
         <button
@@ -295,6 +327,7 @@ export function PropertyInquiryListPage() {
                     key={inquiry.id}
                     inquiry={inquiry}
                     isSyncing={isSyncing}
+                    highlighted={highlightedEntryId === inquiry.id}
                     onStatusChange={(status) => updateInquiry(inquiry.id, { status })}
                     onSaveNotes={(notes) => updateInquiry(inquiry.id, { notes })}
                   />

@@ -18,6 +18,9 @@ import {
   mapLeadRowToDashboard,
   updateDashboardLead,
 } from "@/lib/supabase/repository/dashboard-leads"
+import {
+  subscribePreReservationLeadChanges,
+} from "@/lib/supabase/realtime/dashboard-leads"
 
 function mapSupabaseLoadError(message: string): string {
   if (message.includes("Could not find the table 'public.pre_reservation_leads'")) {
@@ -62,16 +65,49 @@ export function SupabaseLeadStoreProvider({ children }: { children: ReactNode })
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient()
+    let leadsChannel: ReturnType<typeof subscribePreReservationLeadChanges> | null = null
 
-    void refresh()
+    const sync = async () => {
+      if (leadsChannel) {
+        await supabase.removeChannel(leadsChannel)
+        leadsChannel = null
+      }
+
+      await refresh()
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (!session) return
+
+      leadsChannel = subscribePreReservationLeadChanges(supabase, {
+        onInsert: (lead) => {
+          setLeads((current) => {
+            if (current.some((item) => item.id === lead.id)) return current
+            return [lead, ...current]
+          })
+        },
+        onUpdate: (lead) => {
+          setLeads((current) => current.map((item) => (item.id === lead.id ? lead : item)))
+        },
+      })
+    }
+
+    void sync()
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(() => {
-      void refresh()
+      void sync()
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+      if (leadsChannel) {
+        void supabase.removeChannel(leadsChannel)
+      }
+    }
   }, [refresh])
 
   const runMutation = useCallback(async (mutation: () => Promise<void>) => {

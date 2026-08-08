@@ -17,6 +17,7 @@ import {
   listDashboardPropertyInquiries,
   updateDashboardPropertyInquiry,
 } from "@/lib/supabase/repository/dashboard-property-inquiries"
+import { subscribePropertyInquiryLeadChanges } from "@/lib/supabase/realtime/dashboard-leads"
 
 function mapSupabaseLoadError(message: string): string {
   if (message.includes("Could not find the table 'public.property_inquiry_leads'")) {
@@ -58,16 +59,49 @@ export function SupabasePropertyInquiryStoreProvider({ children }: { children: R
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient()
+    let inquiriesChannel: ReturnType<typeof subscribePropertyInquiryLeadChanges> | null = null
 
-    void refresh()
+    const sync = async () => {
+      if (inquiriesChannel) {
+        await supabase.removeChannel(inquiriesChannel)
+        inquiriesChannel = null
+      }
+
+      await refresh()
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (!session) return
+
+      inquiriesChannel = subscribePropertyInquiryLeadChanges(supabase, {
+        onInsert: (inquiry) => {
+          setInquiries((current) => {
+            if (current.some((item) => item.id === inquiry.id)) return current
+            return [inquiry, ...current]
+          })
+        },
+        onUpdate: (inquiry) => {
+          setInquiries((current) => current.map((item) => (item.id === inquiry.id ? inquiry : item)))
+        },
+      })
+    }
+
+    void sync()
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(() => {
-      void refresh()
+      void sync()
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+      if (inquiriesChannel) {
+        void supabase.removeChannel(inquiriesChannel)
+      }
+    }
   }, [refresh])
 
   const runMutation = useCallback(async (mutation: () => Promise<void>) => {

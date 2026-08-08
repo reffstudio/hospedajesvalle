@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import {
   CalendarDays,
   ChevronDown,
@@ -105,19 +106,37 @@ function LeadRow({
   isSyncing,
   onStatusChange,
   onSaveNotes,
+  highlighted = false,
 }: {
   lead: DashboardPreReservationLead
   propertyNames: string[]
   isSyncing: boolean
   onStatusChange: (status: DashboardPreReservationLead["status"]) => Promise<void>
   onSaveNotes: (notes: string) => Promise<void>
+  highlighted?: boolean
 }) {
   const [expanded, setExpanded] = useState(false)
+  const rowRef = useRef<HTMLTableRowElement>(null)
   const nights = nightsBetween(lead.checkIn, lead.checkOut)
+
+  useEffect(() => {
+    if (!highlighted) return
+    setExpanded(true)
+    window.requestAnimationFrame(() => {
+      rowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+    })
+  }, [highlighted, lead.id])
 
   return (
     <>
-      <tr className="border-b border-valle-sage-100 last:border-0">
+      <tr
+        ref={rowRef}
+        id={`lead-${lead.id}`}
+        className={cn(
+          "border-b border-valle-sage-100 last:border-0",
+          highlighted && "bg-valle-gold-500/10 ring-2 ring-inset ring-valle-gold-500/35",
+        )}
+      >
         <td className="px-3 py-4 align-top">
           <div className="space-y-1">
             <p className="font-medium text-valle-forest-900">{lead.name}</p>
@@ -202,9 +221,22 @@ function LeadRow({
 }
 
 export function PreReservationListPage() {
+  const searchParams = useSearchParams()
+  const highlightedEntryId = searchParams.get("entry")
   const { leads, isReady, isSyncing, error, updateLead, refresh } = useLeadStore()
   const { properties } = usePropertyStore()
   const [filter, setFilter] = useState<PreReservationStatusFilter>("all")
+
+  useEffect(() => {
+    if (!highlightedEntryId) return
+
+    const entry = leads.find((lead) => lead.id === highlightedEntryId)
+    if (!entry) return
+
+    if (filter !== "all" && entry.status !== filter) {
+      setFilter("all")
+    }
+  }, [highlightedEntryId, leads, filter])
 
   const propertyNameById = useMemo(() => {
     const map = new Map<string, string>()
@@ -346,6 +378,7 @@ export function PreReservationListPage() {
                     lead={lead}
                     propertyNames={lead.propertyIds.map((id) => propertyNameById.get(id) ?? id)}
                     isSyncing={isSyncing}
+                    highlighted={highlightedEntryId === lead.id}
                     onStatusChange={(status) => updateLead(lead.id, { status })}
                     onSaveNotes={(notes) => updateLead(lead.id, { notes })}
                   />
