@@ -15,7 +15,7 @@
 @import "tw-animate-css";
 
 :root {
-  --site-header-height: 7rem;
+  --site-header-height: 7.75rem;
   --hero-logo-gap: clamp(0.75rem, 2vh, 1.5rem);
   --hero-ridge-clearance: clamp(11rem, 30vh, 17rem);
   --hero-bottom-chrome-height: clamp(5.5rem, 14vh, 7rem);
@@ -255,7 +255,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-clip;
     font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -299,6 +299,12 @@
     max-width: 1320px;
     margin: 0 auto;
     padding: 0 var(--space-6);
+  }
+
+  @media (max-width: 767px) {
+    .container-custom {
+      padding: 0 1rem;
+    }
   }
 
   .glass-panel {

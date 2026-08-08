@@ -21,10 +21,14 @@ function HeroChromeStatsRow() {
   const wrapRef = useRef<HTMLDivElement>(null)
   const rowRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(1)
+  const [useCompactCopy, setUseCompactCopy] = useState(false)
   const { t, tf } = useLanguage()
-  const propertiesCountLabel = tf(t.hero.propertiesCount, {
-    count: getRoundedPropertyDisplayCount(),
-  })
+  const propertiesCountLabel = tf(
+    useCompactCopy ? t.hero.propertiesCountShort : t.hero.propertiesCount,
+    { count: getRoundedPropertyDisplayCount() },
+  )
+  const locationLabel = useCompactCopy ? t.hero.locationShort : t.hero.location
+  const hostLabel = useCompactCopy ? t.hero.certifiedHostShort : t.hero.certifiedHost
 
   useLayoutEffect(() => {
     const wrap = wrapRef.current
@@ -32,12 +36,16 @@ function HeroChromeStatsRow() {
     if (!wrap || !row) return
 
     const fit = () => {
+      const compact = window.matchMedia("(max-width: 640px)").matches
+      setUseCompactCopy(compact)
       setScale(1)
+
       requestAnimationFrame(() => {
         const available = wrap.clientWidth
         const needed = row.scrollWidth
         if (available <= 0 || needed <= 0) return
-        setScale(needed > available ? Math.max(0.72, available / needed) : 1)
+        const nextScale = needed > available ? available / needed : 1
+        setScale(nextScale < 1 ? Math.max(0.82, nextScale) : 1)
       })
     }
 
@@ -51,29 +59,40 @@ function HeroChromeStatsRow() {
       observer.disconnect()
       window.removeEventListener("resize", fit)
     }
-  }, [propertiesCountLabel, t.hero.certifiedHost, t.hero.location])
+  }, [hostLabel, locationLabel, propertiesCountLabel])
 
   const statClass =
     "flex shrink-0 items-center gap-[clamp(0.2rem,0.9vw,0.375rem)] whitespace-nowrap font-medium leading-none"
 
   return (
-    <div ref={wrapRef} className="w-full overflow-hidden">
-      <div
-        ref={rowRef}
-        className="hero-chrome-stats mx-auto flex w-max max-w-none items-center justify-center gap-x-[clamp(0.35rem,2vw,2rem)] text-white/90 drop-shadow-[0_1px_8px_rgba(0,0,0,0.5)]"
-        style={scale < 1 ? { transform: `scale(${scale})`, transformOrigin: "center top" } : undefined}
-      >
-        <div className={statClass}>
-          <MapPin className="h-[clamp(0.625rem,2.2vw,1rem)] w-[clamp(0.625rem,2.2vw,1rem)] shrink-0 text-valle-gold-400" />
-          <span>{t.hero.location}</span>
-        </div>
-        <div className={statClass}>
-          <Home className="h-[clamp(0.625rem,2.2vw,1rem)] w-[clamp(0.625rem,2.2vw,1rem)] shrink-0 text-valle-moss-400" />
-          <span>{propertiesCountLabel}</span>
-        </div>
-        <div className={statClass}>
-          <ShieldCheck className="h-[clamp(0.625rem,2.2vw,1rem)] w-[clamp(0.625rem,2.2vw,1rem)] shrink-0 text-valle-olive-400" />
-          <span>{t.hero.certifiedHost}</span>
+    <div ref={wrapRef} className="w-full max-w-full overflow-hidden px-1">
+      <div className="mx-auto flex w-full justify-center">
+        <div
+          ref={rowRef}
+          className="hero-chrome-stats flex max-w-full flex-wrap items-center justify-center gap-x-[clamp(0.35rem,2vw,1.25rem)] gap-y-1 text-white/90 drop-shadow-[0_1px_8px_rgba(0,0,0,0.5)]"
+          style={
+            scale < 1
+              ? {
+                  transform: `scale(${scale})`,
+                  transformOrigin: "center top",
+                  width: `${100 / scale}%`,
+                  maxWidth: `${100 / scale}%`,
+                }
+              : undefined
+          }
+        >
+          <div className={statClass}>
+            <MapPin className="h-[clamp(0.625rem,2.2vw,1rem)] w-[clamp(0.625rem,2.2vw,1rem)] shrink-0 text-valle-gold-400" />
+            <span>{locationLabel}</span>
+          </div>
+          <div className={statClass}>
+            <Home className="h-[clamp(0.625rem,2.2vw,1rem)] w-[clamp(0.625rem,2.2vw,1rem)] shrink-0 text-valle-moss-400" />
+            <span>{propertiesCountLabel}</span>
+          </div>
+          <div className={statClass}>
+            <ShieldCheck className="h-[clamp(0.625rem,2.2vw,1rem)] w-[clamp(0.625rem,2.2vw,1rem)] shrink-0 text-valle-olive-400" />
+            <span>{hostLabel}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -220,7 +239,7 @@ export function HeroSection() {
     // Tall scroll track: the descent + reveal plays out across this height, all pinned.
     <section ref={containerRef} className="relative h-[350vh]" id="propiedades">
       {/* Pinned viewport — everything happens in this same frame */}
-      <div className="sticky top-0 h-screen overflow-hidden bg-valle-forest-900">
+      <div className="sticky top-0 h-[100dvh] overflow-hidden bg-valle-forest-900">
         {/* Valley background — deepest layer, zooms on scroll */}
         <motion.div
           className="absolute inset-0 z-0 bg-valle-forest-900"
@@ -249,7 +268,7 @@ export function HeroSection() {
 
         {/* Logo + headline + CTA — single column, vertically centered in valley */}
         <motion.div
-          className="pointer-events-none absolute inset-x-0 top-[var(--site-header-height)] bottom-[calc(var(--hero-ridge-clearance)+var(--hero-bottom-chrome-height))] z-10 flex items-center justify-center overflow-hidden px-4 sm:px-6"
+          className="pointer-events-none absolute inset-x-0 top-[var(--site-header-height)] bottom-[calc(var(--hero-ridge-clearance)+var(--hero-bottom-chrome-height))] z-10 flex items-center justify-center px-4 sm:px-6"
           style={{ y: contentY, opacity: contentOpacity, scale: contentScale }}
         >
           <div className="container-custom pointer-events-auto flex w-full max-h-full flex-col items-center justify-center text-center text-white">

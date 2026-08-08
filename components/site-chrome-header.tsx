@@ -19,7 +19,7 @@ export function SiteChromeHeader() {
       href: "/#descubre-el-valle",
       sectionId: "descubre-el-valle",
     },
-    { name: t.nav.reviews, href: "/#reviews", sectionId: "reviews" },
+    { name: t.nav.reviews, mobileLabel: t.nav.reviewsMobile, href: "/#reviews", sectionId: "reviews" },
   ]
 
   return (

@@ -152,7 +152,7 @@ export function SiteNavMobile({ links }: SiteNavLinksProps) {
 
   return (
     <nav
-      className="flex w-full items-center justify-between border-t border-white/10 pt-2 md:hidden"
+      className="flex w-full min-w-0 items-center justify-between gap-1 border-t border-white/10 pt-2 md:hidden"
       aria-label={t.nav.mainAria}
     >
       {menuLinks.map((link) => {
@@ -169,8 +169,8 @@ export function SiteNavMobile({ links }: SiteNavLinksProps) {
             aria-label={isHome ? link.name : undefined}
             onClick={(event) => handleMenuClick(link, event)}
             className={cn(
-              "site-nav-mobile-link inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-full px-1 py-1 transition-colors",
-              isHome && "w-11",
+              "site-nav-mobile-link inline-flex min-w-0 flex-1 items-center justify-center whitespace-nowrap rounded-full px-0.5 py-1 transition-colors",
+              isHome && "max-w-[2.75rem] flex-none",
               isActive ? "bg-white/12 text-white" : "text-white/65 hover:bg-white/8 hover:text-white",
             )}
           >

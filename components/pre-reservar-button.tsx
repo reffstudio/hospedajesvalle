@@ -29,7 +29,7 @@ export function PreReservarButton({ variant, className, prominent = false }: Pre
       whileHover={{ scale: 1.04, y: -1 }}
       whileTap={{ scale: 0.97 }}
       className={cn(
-        "pre-reservar-btn pre-reservar-btn--hero-cta group relative isolate inline-flex items-center justify-center overflow-hidden rounded-full px-7 py-3.5 text-sm font-bold uppercase tracking-[0.18em] text-white transition-[filter,transform] hover:brightness-110",
+        "pre-reservar-btn pre-reservar-btn--hero-cta group relative isolate inline-flex max-w-full items-center justify-center overflow-hidden rounded-full px-5 py-3 text-xs font-bold uppercase tracking-[0.14em] text-white transition-[filter,transform] hover:brightness-110 sm:px-7 sm:py-3.5 sm:text-sm sm:tracking-[0.18em]",
         className,
       )}
     >
