@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { Facebook, Instagram, MapPin } from "lucide-react"
 import { useLanguage } from "./language-provider"
 import { usePreReservation } from "./pre-reservation-context"
+import { prefetchPublicProperties } from "@/lib/properties/use-published-properties"
 
 const linkClass =
   "text-[13px] leading-none text-valle-forest-700 transition-colors hover:text-valle-forest-900 lg:text-sm"
@@ -15,7 +16,7 @@ const socialClass =
 export function Footer() {
   const currentYear = new Date().getFullYear()
   const pathname = usePathname()
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const { open: openPreReservation } = usePreReservation()
   const isHome = pathname === "/"
 
@@ -51,7 +52,12 @@ export function Footer() {
             <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">
               <button
                 type="button"
-                onClick={() => openPreReservation()}
+                onMouseEnter={() => prefetchPublicProperties(locale)}
+                onFocus={() => prefetchPublicProperties(locale)}
+                onClick={() => {
+                  prefetchPublicProperties(locale)
+                  openPreReservation()
+                }}
                 className="inline-flex items-center justify-center rounded-full border border-valle-forest-900/10 bg-white px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-valle-forest-900 shadow-[0_1px_2px_rgba(24,40,32,0.06)] transition-colors hover:border-valle-forest-900/18 hover:bg-valle-sage-50"
               >
                 {t.common.preReserve}

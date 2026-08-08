@@ -51,7 +51,7 @@ export function PropertyListPage() {
     }
 
     if (updated) {
-      setSuccessMessage("Cambios guardados correctamente.")
+      setSuccessMessage(`Propiedad "${updated}" actualizada correctamente.`)
       router.replace("/dashboard/properties")
     }
   }, [router, searchParams])

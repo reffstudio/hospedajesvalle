@@ -67,7 +67,6 @@ export function PropertyForm({ mode, propertyId }: PropertyFormProps) {
   const [form, setForm] = useState<DashboardPropertyInput>(emptyProperty)
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
 
@@ -149,7 +148,8 @@ export function PropertyForm({ mode, propertyId }: PropertyFormProps) {
 
       const targetId = existing!.id
       await updateProperty(targetId, payload)
-      setSaveSuccess("Cambios guardados correctamente.")
+      router.replace(`/dashboard/properties?updated=${encodeURIComponent(payload.name)}`)
+      return
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "No se pudo guardar la propiedad.")
     } finally {
@@ -173,12 +173,6 @@ export function PropertyForm({ mode, propertyId }: PropertyFormProps) {
             Cancelar
           </Link>
         </div>
-
-      {saveSuccess ? (
-        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-          {saveSuccess}
-        </p>
-      ) : null}
 
       {error || storeError ? (
         <p className="rounded-xl border border-valle-wine-200 bg-valle-wine-50 px-4 py-3 text-sm text-valle-wine-800">

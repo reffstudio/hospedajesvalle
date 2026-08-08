@@ -23,6 +23,7 @@ import { OwnersSection } from "@/components/owners-section"
 import { Footer } from "@/components/footer"
 import { PreReservationProvider } from "@/components/pre-reservation-context"
 import { PreReservationModal } from "@/components/pre-reservation-modal"
+import { PreReservationWarmup } from "@/components/pre-reservation-warmup"
 import { HomeHashScroll } from "@/components/home-hash-scroll"
 
 export default function HomePage() {
@@ -41,6 +42,7 @@ export default function HomePage() {
             <Footer />
           </main>
         </HeroScrollProvider>
+        <PreReservationWarmup />
         <PreReservationModal />
       </PreReservationProvider>
     </LanguageProvider>

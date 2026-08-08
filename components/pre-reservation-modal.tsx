@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import dynamic from "next/dynamic"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
 import { X, Check, User, Mail, CalendarDays, Send } from "lucide-react"
@@ -13,15 +14,38 @@ import {
 import { usePublishedProperties } from "@/lib/properties/use-published-properties"
 import { getDateLocale } from "@/lib/i18n/translations"
 import { usePreReservation } from "./pre-reservation-context"
-import { DateRangeCalendar } from "./date-range-calendar"
 import { PhoneCountryInput } from "./phone-country-input"
 import { useLanguage } from "./language-provider"
 import { cn } from "@/lib/utils"
 
+const DateRangeCalendar = dynamic(
+  () => import("./date-range-calendar").then((mod) => mod.DateRangeCalendar),
+  {
+    ssr: false,
+    loading: () => <div className="h-[280px] animate-pulse rounded-xl bg-valle-sage-100" aria-hidden />,
+  },
+)
+
+const panelEase = [0.22, 1, 0.36, 1] as const
+
+function PropertyPickerSkeleton() {
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3" aria-hidden>
+      {Array.from({ length: 6 }, (_, index) => (
+        <div key={index} className="overflow-hidden rounded-xl border border-valle-sage-200 bg-valle-sage-50">
+          <div className="aspect-[4/3] animate-pulse bg-valle-sage-100" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function PreReservationModal() {
   const { isOpen, initialPropertyId, close } = usePreReservation()
   const { locale, t, tf } = useLanguage()
-  const { properties: featuredProducts } = usePublishedProperties(locale)
+  const { properties: featuredProducts, isLoading: isLoadingProperties } = usePublishedProperties(locale)
+  const hasOpenedRef = useRef(false)
+  const [showHeavyContent, setShowHeavyContent] = useState(false)
 
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -39,6 +63,27 @@ export function PreReservationModal() {
     if (!d) return "—"
     return d.toLocaleDateString(getDateLocale(locale), { day: "numeric", month: "short", year: "numeric" })
   }
+
+  useEffect(() => {
+    if (isOpen) {
+      hasOpenedRef.current = true
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) {
+      setShowHeavyContent(false)
+      return
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      setShowHeavyContent(true)
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+    }
+  }, [isOpen])
 
   useEffect(() => {
     if (!isOpen) return
@@ -103,7 +148,7 @@ export function PreReservationModal() {
 
   const resetAndClose = () => {
     close()
-    setTimeout(() => {
+    window.setTimeout(() => {
       setName("")
       setEmail("")
       setPhoneCountry(getDefaultPhoneCountryIso(locale))
@@ -113,7 +158,7 @@ export function PreReservationModal() {
       setCheckIn(null)
       setCheckOut(null)
       setSubmitted(false)
-    }, 300)
+    }, 220)
   }
 
   const inputClass =
@@ -122,27 +167,32 @@ export function PreReservationModal() {
   const successBody =
     selectedIds.length > 1 ? t.preReservation.successBodyMulti : t.preReservation.successBodySingle
 
+  if (!isOpen && !hasOpenedRef.current) return null
+
   return (
-    <AnimatePresence>
-      {isOpen && (
+    <AnimatePresence initial={false}>
+      {isOpen ? (
         <motion.div
           className="fixed inset-0 z-[60] flex items-center justify-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
         >
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={resetAndClose} />
+          <div className="absolute inset-0 bg-black/65" onClick={resetAndClose} aria-hidden />
 
           <motion.div
-            className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto overscroll-contain rounded-2xl bg-white shadow-2xl"
-            initial={{ scale: 0.94, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.94, opacity: 0, y: 20 }}
-            transition={{ duration: 0.3, ease: [0.21, 0.47, 0.32, 0.98] }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pre-reservation-title"
+            className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto overscroll-contain rounded-2xl bg-white shadow-2xl will-change-transform"
+            initial={{ opacity: 0, y: 14, scale: 0.985 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.99 }}
+            transition={{ duration: 0.24, ease: panelEase }}
           >
             <button
-              className="absolute top-4 right-4 z-10 p-2 bg-white/80 backdrop-blur-sm hover:bg-neutral-100 rounded-full transition-colors shadow-sm"
+              className="absolute top-4 right-4 z-10 rounded-full bg-white/90 p-2 shadow-sm transition-colors hover:bg-neutral-100"
               onClick={resetAndClose}
               aria-label={t.common.close}
             >
@@ -150,17 +200,17 @@ export function PreReservationModal() {
             </button>
 
             {submitted ? (
-              <div className="p-10 lg:p-14 text-center">
-                <div className="w-16 h-16 bg-valle-olive-400/20 rounded-full flex items-center justify-center mx-auto mb-5">
+              <div className="p-10 text-center lg:p-14">
+                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-valle-olive-400/20">
                   <Check size={28} className="text-valle-olive-600" />
                 </div>
-                <h3 className="text-2xl font-bold text-valle-forest-900 mb-3">{t.preReservation.successTitle}</h3>
-                <p className="text-neutral-600 max-w-md mx-auto leading-relaxed">
+                <h3 className="mb-3 text-2xl font-bold text-valle-forest-900">{t.preReservation.successTitle}</h3>
+                <p className="mx-auto max-w-md leading-relaxed text-neutral-600">
                   {tf(successBody, { name: name.split(" ")[0] })}
                 </p>
                 <button
                   onClick={resetAndClose}
-                  className="mt-8 inline-flex items-center rounded-full bg-valle-wine-600 text-white px-6 py-3 font-medium hover:bg-valle-wine-700 transition-colors"
+                  className="mt-8 inline-flex items-center rounded-full bg-valle-wine-600 px-6 py-3 font-medium text-white transition-colors hover:bg-valle-wine-700"
                 >
                   {t.common.ready}
                 </button>
@@ -168,11 +218,13 @@ export function PreReservationModal() {
             ) : (
               <form onSubmit={handleSubmit} className="p-6 lg:p-10">
                 <div className="mb-6 pr-10">
-                  <h2 className="text-2xl lg:text-3xl font-bold text-valle-forest-900">{t.preReservation.title}</h2>
-                  <p className="text-neutral-600 mt-1">{t.preReservation.subtitle}</p>
+                  <h2 id="pre-reservation-title" className="text-2xl font-bold text-valle-forest-900 lg:text-3xl">
+                    {t.preReservation.title}
+                  </h2>
+                  <p className="mt-1 text-neutral-600">{t.preReservation.subtitle}</p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="relative">
                     <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" />
                     <input
@@ -195,7 +247,7 @@ export function PreReservationModal() {
                       className={inputClass}
                     />
                   </div>
-                  <div className="sm:col-span-2 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_9.5rem]">
+                  <div className="grid grid-cols-1 gap-3 sm:col-span-2 sm:grid-cols-[minmax(0,1fr)_9.5rem]">
                     <PhoneCountryInput
                       locale={locale}
                       countryIso={phoneCountry}
@@ -220,99 +272,115 @@ export function PreReservationModal() {
                   </div>
                 </div>
 
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-valle-forest-900 uppercase tracking-wide">
-                      {t.preReservation.propertiesTitle}
-                    </h3>
-                    <span className="text-xs text-neutral-500">
-                      {selectedIds.length}{" "}
-                      {selectedIds.length === 1 ? t.preReservation.selected : t.preReservation.selectedPlural}
-                    </span>
-                  </div>
-                  <p className="text-sm text-neutral-500 mb-4">{t.preReservation.multiSelect}</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {featuredProducts.map((property) => {
-                      const active = selectedIds.includes(property.id)
-                      return (
-                        <button
-                          key={property.id}
-                          type="button"
-                          onClick={() => toggleProperty(property.id)}
-                          className={cn(
-                            "group relative rounded-xl overflow-hidden border-2 text-left transition-all",
-                            active ? "border-valle-wine-600 ring-2 ring-valle-wine-600/20" : "border-transparent hover:border-valle-sage-200",
-                          )}
-                          aria-pressed={active}
-                        >
-                          <div className="relative aspect-[4/3]">
-                            <Image
-                              src={property.image}
-                              alt={property.name}
-                              fill
-                              className="object-cover"
-                              sizes="(max-width: 640px) 50vw, 200px"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                            {active && (
-                              <div className="absolute top-2 right-2 w-6 h-6 bg-valle-wine-600 rounded-full flex items-center justify-center">
-                                <Check size={14} className="text-white" />
-                              </div>
-                            )}
-                            <div className="absolute bottom-0 left-0 right-0 p-2.5">
-                              <p className="text-white text-sm font-semibold leading-tight">{property.name}</p>
-                              <p className="text-white/80 text-xs">{property.price}</p>
+                {showHeavyContent ? (
+                  <>
+                    <div className="mb-8">
+                      <div className="mb-3 flex items-center justify-between">
+                        <h3 className="text-sm font-semibold uppercase tracking-wide text-valle-forest-900">
+                          {t.preReservation.propertiesTitle}
+                        </h3>
+                        <span className="text-xs text-neutral-500">
+                          {selectedIds.length}{" "}
+                          {selectedIds.length === 1 ? t.preReservation.selected : t.preReservation.selectedPlural}
+                        </span>
+                      </div>
+                      <p className="mb-4 text-sm text-neutral-500">{t.preReservation.multiSelect}</p>
+                      {isLoadingProperties && featuredProducts.length === 0 ? (
+                        <PropertyPickerSkeleton />
+                      ) : (
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                          {featuredProducts.map((property) => {
+                            const active = selectedIds.includes(property.id)
+                            return (
+                              <button
+                                key={property.id}
+                                type="button"
+                                onClick={() => toggleProperty(property.id)}
+                                className={cn(
+                                  "group relative overflow-hidden rounded-xl border-2 text-left transition-colors",
+                                  active
+                                    ? "border-valle-wine-600 ring-2 ring-valle-wine-600/20"
+                                    : "border-transparent hover:border-valle-sage-200",
+                                )}
+                                aria-pressed={active}
+                              >
+                                <div className="relative aspect-[4/3]">
+                                  <Image
+                                    src={property.image}
+                                    alt={property.name}
+                                    fill
+                                    loading="lazy"
+                                    className="object-cover"
+                                    sizes="(max-width: 640px) 50vw, 200px"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                                  {active ? (
+                                    <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-valle-wine-600">
+                                      <Check size={14} className="text-white" />
+                                    </div>
+                                  ) : null}
+                                  <div className="absolute bottom-0 left-0 right-0 p-2.5">
+                                    <p className="text-sm font-semibold leading-tight text-white">{property.name}</p>
+                                    <p className="text-xs text-white/80">{property.price}</p>
+                                  </div>
+                                </div>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mb-8">
+                      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-valle-forest-900">
+                        {t.preReservation.datesTitle}
+                      </h3>
+                      <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-2">
+                        <div className="rounded-2xl border border-valle-sage-200 p-4">
+                          <DateRangeCalendar
+                            checkIn={checkIn}
+                            checkOut={checkOut}
+                            onChange={({ checkIn: nextCheckIn, checkOut: nextCheckOut }) => {
+                              setCheckIn(nextCheckIn)
+                              setCheckOut(nextCheckOut)
+                            }}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-center gap-3 rounded-xl border border-valle-sage-200 bg-valle-sage-50 px-4 py-3">
+                            <CalendarDays size={18} className="text-valle-olive-600" />
+                            <div>
+                              <p className="text-xs uppercase tracking-wide text-neutral-500">{t.preReservation.checkIn}</p>
+                              <p className="text-sm font-medium text-valle-forest-900">{formatDate(checkIn)}</p>
                             </div>
                           </div>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                <div className="mb-8">
-                  <h3 className="text-sm font-semibold text-valle-forest-900 uppercase tracking-wide mb-3">
-                    {t.preReservation.datesTitle}
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                    <div className="rounded-2xl border border-valle-sage-200 p-4">
-                      <DateRangeCalendar
-                        checkIn={checkIn}
-                        checkOut={checkOut}
-                        onChange={({ checkIn, checkOut }) => {
-                          setCheckIn(checkIn)
-                          setCheckOut(checkOut)
-                        }}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-3 rounded-xl bg-valle-sage-50 border border-valle-sage-200 px-4 py-3">
-                        <CalendarDays size={18} className="text-valle-olive-600" />
-                        <div>
-                          <p className="text-xs text-neutral-500 uppercase tracking-wide">{t.preReservation.checkIn}</p>
-                          <p className="text-sm font-medium text-valle-forest-900">{formatDate(checkIn)}</p>
+                          <div className="flex items-center gap-3 rounded-xl border border-valle-sage-200 bg-valle-sage-50 px-4 py-3">
+                            <CalendarDays size={18} className="text-valle-olive-600" />
+                            <div>
+                              <p className="text-xs uppercase tracking-wide text-neutral-500">{t.preReservation.checkOut}</p>
+                              <p className="text-sm font-medium text-valle-forest-900">{formatDate(checkOut)}</p>
+                            </div>
+                          </div>
+                          <p className="text-xs leading-relaxed text-neutral-500">{t.preReservation.calendarHint}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 rounded-xl bg-valle-sage-50 border border-valle-sage-200 px-4 py-3">
-                        <CalendarDays size={18} className="text-valle-olive-600" />
-                        <div>
-                          <p className="text-xs text-neutral-500 uppercase tracking-wide">{t.preReservation.checkOut}</p>
-                          <p className="text-sm font-medium text-valle-forest-900">{formatDate(checkOut)}</p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-neutral-500 leading-relaxed">{t.preReservation.calendarHint}</p>
                     </div>
+                  </>
+                ) : (
+                  <div className="mb-8 space-y-8" aria-hidden>
+                    <PropertyPickerSkeleton />
+                    <div className="h-[280px] animate-pulse rounded-2xl bg-valle-sage-100" />
                   </div>
-                </div>
+                )}
 
                 <button
                   type="submit"
                   disabled={!isValid || isSubmitting}
                   className={cn(
-                    "w-full py-4 rounded-full font-medium text-lg flex items-center justify-center gap-2 transition-all",
+                    "flex w-full items-center justify-center gap-2 rounded-full py-4 text-lg font-medium transition-colors",
                     isValid && !isSubmitting
                       ? "bg-valle-wine-600 text-white hover:bg-valle-wine-700"
-                      : "bg-valle-sage-200 text-neutral-400 cursor-not-allowed",
+                      : "cursor-not-allowed bg-valle-sage-200 text-neutral-400",
                   )}
                 >
                   <Send size={18} />
@@ -321,12 +389,12 @@ export function PreReservationModal() {
                 {submitError ? (
                   <p className="mt-3 text-center text-sm text-valle-wine-700">{submitError}</p>
                 ) : null}
-                <p className="text-xs text-neutral-400 text-center mt-3">{t.preReservation.disclaimer}</p>
+                <p className="mt-3 text-center text-xs text-neutral-400">{t.preReservation.disclaimer}</p>
               </form>
             )}
           </motion.div>
         </motion.div>
-      )}
+      ) : null}
     </AnimatePresence>
   )
 }

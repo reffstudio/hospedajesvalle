@@ -8,6 +8,7 @@ import { AmenityIconList } from "@/components/amenity-icon-list"
 import { BlurPanel } from "./blur-panel"
 import { usePreReservation } from "./pre-reservation-context"
 import { useLanguage } from "./language-provider"
+import { prefetchPublicProperties } from "@/lib/properties/use-published-properties"
 import { productAmenitiesToListItems } from "@/lib/amenity-list"
 import { hydratePublicPropertyAmenities } from "@/lib/properties/hydrate-public-property"
 
@@ -167,8 +168,9 @@ export function QuickLookModal({ product, isOpen, onClose }: QuickLookModalProps
                   <motion.button
                     type="button"
                     onClick={() => {
+                      prefetchPublicProperties(locale)
                       onClose()
-                      openPreReservation(hydratedProduct.id)
+                      window.setTimeout(() => openPreReservation(hydratedProduct.id), 260)
                     }}
                     className="w-full bg-valle-wine-600 text-white py-4 rounded-full font-medium text-lg hover:bg-valle-wine-700 transition-colors duration-200 flex items-center justify-center gap-2"
                     whileHover={{ scale: 1.02 }}

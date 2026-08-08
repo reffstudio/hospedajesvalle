@@ -2,33 +2,30 @@
 
 import { useEffect, useState } from "react"
 import { env } from "@/lib/config/env"
-import { getFeaturedCarouselProperties, getPublishedProperties } from "@/lib/properties/queries"
-import { hydratePublicProperties } from "@/lib/properties/hydrate-public-property"
+import {
+  ensurePublicProperties,
+  prefetchPublicProperties,
+  readPublicPropertiesCache,
+} from "@/lib/properties/public-properties-cache"
 import type { PublicProperty } from "@/lib/properties/types"
 import type { Locale } from "@/lib/i18n/types"
 
-async function fetchPropertiesFromApi(locale: Locale, featuredOnly = false) {
-  const params = new URLSearchParams({
-    locale,
-    featured: String(featuredOnly),
-  })
-  const response = await fetch(`/api/properties?${params.toString()}`)
-  if (!response.ok) {
-    throw new Error("No se pudieron cargar las propiedades.")
-  }
-  const payload = (await response.json()) as { properties: PublicProperty[] }
-  return payload.properties
+function getInitialProperties(locale: Locale, featuredOnly: boolean): PublicProperty[] {
+  const cached = readPublicPropertiesCache(locale)
+  if (!cached) return []
+  return featuredOnly ? cached.featured : cached.all
 }
 
 export function usePublishedProperties(locale: Locale) {
-  const [properties, setProperties] = useState<PublicProperty[]>(() =>
-    env.dataProvider === "supabase" ? [] : getPublishedProperties(locale),
+  const [properties, setProperties] = useState<PublicProperty[]>(() => getInitialProperties(locale, false))
+  const [isLoading, setIsLoading] = useState(
+    () => env.dataProvider === "supabase" && getInitialProperties(locale, false).length === 0,
   )
-  const [isLoading, setIsLoading] = useState(env.dataProvider === "supabase")
 
   useEffect(() => {
-    if (env.dataProvider !== "supabase") {
-      setProperties(getPublishedProperties(locale))
+    const cached = readPublicPropertiesCache(locale)
+    if (cached) {
+      setProperties(cached.all)
       setIsLoading(false)
       return
     }
@@ -36,9 +33,9 @@ export function usePublishedProperties(locale: Locale) {
     let cancelled = false
     setIsLoading(true)
 
-    void fetchPropertiesFromApi(locale)
-      .then((next) => {
-        if (!cancelled) setProperties(hydratePublicProperties(next, locale))
+    void ensurePublicProperties(locale)
+      .then((entry) => {
+        if (!cancelled) setProperties(entry.all)
       })
       .catch((error) => {
         console.error("[usePublishedProperties]", error)
@@ -57,14 +54,15 @@ export function usePublishedProperties(locale: Locale) {
 }
 
 export function useFeaturedCarouselProperties(locale: Locale) {
-  const [properties, setProperties] = useState<PublicProperty[]>(() =>
-    env.dataProvider === "supabase" ? [] : getFeaturedCarouselProperties(locale),
+  const [properties, setProperties] = useState<PublicProperty[]>(() => getInitialProperties(locale, true))
+  const [isLoading, setIsLoading] = useState(
+    () => env.dataProvider === "supabase" && getInitialProperties(locale, true).length === 0,
   )
-  const [isLoading, setIsLoading] = useState(env.dataProvider === "supabase")
 
   useEffect(() => {
-    if (env.dataProvider !== "supabase") {
-      setProperties(getFeaturedCarouselProperties(locale))
+    const cached = readPublicPropertiesCache(locale)
+    if (cached) {
+      setProperties(cached.featured)
       setIsLoading(false)
       return
     }
@@ -72,9 +70,9 @@ export function useFeaturedCarouselProperties(locale: Locale) {
     let cancelled = false
     setIsLoading(true)
 
-    void fetchPropertiesFromApi(locale, true)
-      .then((next) => {
-        if (!cancelled) setProperties(hydratePublicProperties(next, locale))
+    void ensurePublicProperties(locale)
+      .then((entry) => {
+        if (!cancelled) setProperties(entry.featured)
       })
       .catch((error) => {
         console.error("[useFeaturedCarouselProperties]", error)
@@ -91,3 +89,5 @@ export function useFeaturedCarouselProperties(locale: Locale) {
 
   return { properties, isLoading }
 }
+
+export { prefetchPublicProperties }

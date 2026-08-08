@@ -4,6 +4,7 @@ import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { usePreReservation } from "./pre-reservation-context"
 import { useLanguage } from "./language-provider"
+import { prefetchPublicProperties } from "@/lib/properties/use-published-properties"
 
 const ease = [0.21, 0.47, 0.32, 0.98] as const
 
@@ -16,13 +17,24 @@ type PreReservarButtonProps = {
 
 export function PreReservarButton({ variant, className, prominent = false }: PreReservarButtonProps) {
   const { open } = usePreReservation()
-  const { t } = useLanguage()
+  const { locale, t } = useLanguage()
   const isHero = variant === "hero"
+
+  const handleOpen = () => {
+    prefetchPublicProperties(locale)
+    open()
+  }
+
+  const handleWarmup = () => {
+    prefetchPublicProperties(locale)
+  }
 
   return (
     <motion.button
       type="button"
-      onClick={() => open()}
+      onClick={handleOpen}
+      onMouseEnter={handleWarmup}
+      onFocus={handleWarmup}
       initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease }}
