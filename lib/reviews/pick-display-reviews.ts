@@ -127,6 +127,7 @@ export type PickDisplayReviewsOptions = {
   count?: number
   /** Omit for random selection on each call (e.g. client mount). */
   seed?: number
+  properties?: import("@/lib/properties/types").PublicProperty[]
 }
 
 /**
@@ -141,7 +142,7 @@ export function pickDisplayReviews(
   const seed = options.seed ?? Math.floor(Math.random() * 2 ** 31)
   const rng = mulberry32(seed)
 
-  const properties = shuffleWithRng(getPublishedProperties(locale), rng)
+  const properties = shuffleWithRng(options.properties ?? getPublishedProperties(locale), rng)
   if (properties.length === 0) return []
 
   const guests = shuffleWithRng(GUEST_PROFILES, rng)

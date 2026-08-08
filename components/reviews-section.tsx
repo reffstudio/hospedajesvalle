@@ -8,6 +8,7 @@ import { Reveal } from "./reveal"
 import { QuickLookModal } from "./quick-look-modal"
 import { useLanguage } from "./language-provider"
 import { pickDisplayReviews, type DisplayReview } from "@/lib/reviews"
+import { usePublishedProperties } from "@/lib/properties/use-published-properties"
 import type { PublicProperty } from "@/lib/properties/types"
 import { cn } from "@/lib/utils"
 
@@ -234,15 +235,16 @@ function ReviewsMobileCarousel({
 
 export function ReviewsSection() {
   const { locale, t } = useLanguage()
+  const { properties } = usePublishedProperties(locale)
   const [reviews, setReviews] = useState<DisplayReview[] | null>(null)
   const [selectedProduct, setSelectedProduct] = useState<PublicProperty | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
-    setReviews(pickDisplayReviews(locale))
+    setReviews(pickDisplayReviews(locale, { properties }))
     setSelectedProduct(null)
     setIsModalOpen(false)
-  }, [locale])
+  }, [locale, properties])
 
   const handleOpenProperty = (product: PublicProperty) => {
     setSelectedProduct(product)

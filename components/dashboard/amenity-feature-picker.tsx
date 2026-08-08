@@ -151,11 +151,11 @@ export function AmenityFeaturePicker({
     )
   }
 
-  const addCustomAmenity = () => {
+  const addCustomAmenity = async () => {
     const trimmed = draftLabel.trim()
     if (!trimmed) return
 
-    const created = addCustomAmenityDefinition({ label: trimmed, iconId: draftIconId })
+    const created = await addCustomAmenityDefinition({ label: trimmed, iconId: draftIconId })
     if (!customAmenityIds.includes(created.id)) {
       onCustomAmenityIdsChange([...customAmenityIds, created.id])
     }

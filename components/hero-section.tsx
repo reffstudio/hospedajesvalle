@@ -7,7 +7,8 @@ import { MapPin, Home, ShieldCheck, ChevronDown } from "lucide-react"
 import { Reveal } from "./reveal"
 import { PropertiesCarousel } from "./properties-carousel"
 import { QuickLookModal } from "./quick-look-modal"
-import { getFeaturedCarouselProperties, getRoundedPropertyDisplayCount } from "@/lib/properties/queries"
+import { getRoundedPropertyDisplayCount } from "@/lib/properties/queries"
+import { useFeaturedCarouselProperties } from "@/lib/properties/use-published-properties"
 import {
   HERO_SCROLL_RESET_EVENT,
 } from "@/lib/hero-featured-scroll"
@@ -83,7 +84,7 @@ export function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null)
   const ctaInNav = useCtaInNav()
   const { locale, t } = useLanguage()
-  const featuredProducts = getFeaturedCarouselProperties(locale)
+  const { properties: featuredProducts } = useFeaturedCarouselProperties(locale)
 
   useEffect(() => {
     featuredProducts.forEach((product) => {

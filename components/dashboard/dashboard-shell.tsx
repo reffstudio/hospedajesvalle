@@ -2,21 +2,26 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { ExternalLink, LayoutGrid, LogOut } from "lucide-react"
+import { CalendarCheck, ExternalLink, LayoutGrid, LogOut } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useDashboardAuth } from "./dashboard-auth-provider"
 
-const navItems = [{ href: "/dashboard/properties", label: "Propiedades", icon: LayoutGrid }]
+const navItems = [
+  { href: "/dashboard/properties", label: "Propiedades", icon: LayoutGrid },
+  { href: "/dashboard/pre-reservations", label: "Pre-reservas", icon: CalendarCheck },
+]
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { email, logout } = useDashboardAuth()
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     router.replace("/dashboard/login")
   }
+
+  const activeNavItem = navItems.find((item) => pathname.startsWith(item.href)) ?? navItems[0]
 
   return (
     <div className="min-h-screen bg-valle-sage-50">
@@ -80,7 +85,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <div className="flex items-center justify-between px-4 py-3">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-valle-forest-500">Panel</p>
-                <p className="text-sm font-semibold text-valle-forest-900">Propiedades</p>
+                <p className="text-sm font-semibold text-valle-forest-900">{activeNavItem.label}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Link
@@ -99,6 +104,25 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
             </div>
+            <nav className="flex gap-2 overflow-x-auto px-4 pb-3">
+              {navItems.map((item) => {
+                const active = pathname.startsWith(item.href)
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
+                      active
+                        ? "bg-valle-forest-900 text-white"
+                        : "bg-white text-valle-forest-700 ring-1 ring-valle-sage-200",
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              })}
+            </nav>
           </header>
 
           <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>

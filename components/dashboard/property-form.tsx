@@ -54,15 +54,21 @@ type PropertyFormProps = {
 
 export function PropertyForm({ mode, propertyId }: PropertyFormProps) {
   const router = useRouter()
-  const { properties, customAmenityCatalog, createProperty, updateProperty, isReady } = usePropertyStore()
+  const { properties, customAmenityCatalog, createProperty, updateProperty, isReady, isSyncing, error: storeError } =
+    usePropertyStore()
   const existing = useMemo(
-    () => (propertyId ? properties.find((property) => property.id === propertyId) : undefined),
+    () =>
+      propertyId
+        ? properties.find((property) => property.id === propertyId || property.slug === propertyId)
+        : undefined,
     [properties, propertyId],
   )
 
   const [form, setForm] = useState<DashboardPropertyInput>(emptyProperty)
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
 
   const baseSlug = slugify(form.slug || form.name) || "propiedad"
@@ -88,6 +94,17 @@ export function PropertyForm({ mode, propertyId }: PropertyFormProps) {
   }
 
   if (mode === "edit" && !existing) {
+    if (isSaving || isSyncing) {
+      return (
+        <div className="dashboard-panel flex flex-col items-center justify-center gap-3 py-16 text-center">
+          <p className="text-sm font-medium text-valle-forest-800">Guardando propiedad…</p>
+          <p className="max-w-sm text-sm text-valle-forest-600">
+            Subiendo imágenes y sincronizando con Supabase. Esto puede tardar unos segundos.
+          </p>
+        </div>
+      )
+    }
+
     return (
       <div className="dashboard-panel">
         <p className="text-sm text-valle-forest-700">No se encontró la propiedad.</p>
@@ -100,7 +117,7 @@ export function PropertyForm({ mode, propertyId }: PropertyFormProps) {
 
   const featuredCount = properties.filter((property) => property.featured && property.id !== propertyId).length
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     setError(null)
 
@@ -121,18 +138,23 @@ export function PropertyForm({ mode, propertyId }: PropertyFormProps) {
       featuredOrder: form.featured ? form.featuredOrder ?? featuredCount + 1 : null,
     }
 
-    if (mode === "create") {
-      const created = createProperty(payload)
-      router.replace(`/dashboard/properties/${created.id}`)
-      return
-    }
+    try {
+      setIsSaving(true)
 
-    updateProperty(propertyId!, payload)
-    if (resolvedSlug !== propertyId) {
-      router.replace(`/dashboard/properties/${resolvedSlug}`)
-      return
+      if (mode === "create") {
+        const created = await createProperty(payload)
+        router.replace(`/dashboard/properties?created=${encodeURIComponent(created.name)}`)
+        return
+      }
+
+      const targetId = existing!.id
+      await updateProperty(targetId, payload)
+      setSaveSuccess("Cambios guardados correctamente.")
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "No se pudo guardar la propiedad.")
+    } finally {
+      setIsSaving(false)
     }
-    router.push("/dashboard/properties")
   }
 
   return (
@@ -152,9 +174,15 @@ export function PropertyForm({ mode, propertyId }: PropertyFormProps) {
           </Link>
         </div>
 
-      {error ? (
+      {saveSuccess ? (
+        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          {saveSuccess}
+        </p>
+      ) : null}
+
+      {error || storeError ? (
         <p className="rounded-xl border border-valle-wine-200 bg-valle-wine-50 px-4 py-3 text-sm text-valle-wine-800">
-          {error}
+          {error ?? storeError}
         </p>
       ) : null}
 
@@ -436,7 +464,21 @@ export function PropertyForm({ mode, propertyId }: PropertyFormProps) {
       </section>
       </form>
 
-      <PropertyFormFloatingBar mode={mode} onPreview={() => setPreviewOpen(true)} />
+      <PropertyFormFloatingBar mode={mode} onPreview={() => setPreviewOpen(true)} isSaving={isSaving || isSyncing} />
+      {isSaving ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-[#f6f7f2]/75 backdrop-blur-[2px]"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <div className="mx-4 max-w-sm rounded-2xl border border-valle-sage-200 bg-white px-6 py-5 text-center shadow-lg">
+            <p className="text-sm font-semibold text-valle-forest-900">Guardando propiedad…</p>
+            <p className="mt-2 text-sm text-valle-forest-600">
+              Subiendo imágenes y sincronizando con Supabase. No cierres esta pestaña.
+            </p>
+          </div>
+        </div>
+      ) : null}
       <PropertyPreviewModal
         product={previewProduct}
         status={form.status}

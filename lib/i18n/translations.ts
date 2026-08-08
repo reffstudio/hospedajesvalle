@@ -105,6 +105,8 @@ const es = {
     name: "Nombre completo",
     email: "Correo electrónico",
     phone: "Teléfono",
+    phoneCountry: "País / código",
+    phoneNumber: "Número de teléfono",
     guest: "persona",
     guests: "personas",
     propertiesTitle: "Propiedades de interés",
@@ -116,6 +118,7 @@ const es = {
     checkOut: "Salida",
     calendarHint: "Selecciona la fecha de llegada y luego la de salida en el calendario.",
     submit: "Enviar pre-reserva",
+    submitting: "Enviando solicitud…",
     disclaimer:
       "Esto es una solicitud de pre-reserva. El administrador de la propiedad confirmará la disponibilidad antes de finalizar.",
     successTitle: "¡Pre-reserva recibida!",
@@ -301,6 +304,8 @@ const en: typeof es = {
     name: "Full name",
     email: "Email",
     phone: "Phone",
+    phoneCountry: "Country / code",
+    phoneNumber: "Phone number",
     guest: "guest",
     guests: "guests",
     propertiesTitle: "Properties of interest",
@@ -312,6 +317,7 @@ const en: typeof es = {
     checkOut: "Check-out",
     calendarHint: "Select your check-in date, then your check-out date on the calendar.",
     submit: "Send pre-reservation",
+    submitting: "Sending request…",
     disclaimer:
       "This is a pre-reservation request. The property manager will confirm availability before finalizing.",
     successTitle: "Pre-reservation received!",

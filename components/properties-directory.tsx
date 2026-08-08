@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { ProductCard } from "./product-card"
 import { QuickLookModal } from "./quick-look-modal"
-import { getPublishedProperties } from "@/lib/properties/queries"
+import { usePublishedProperties } from "@/lib/properties/use-published-properties"
 import type { PublicProperty } from "@/lib/properties/types"
 import { amenitiesForDiscoverFilter, isDiscoverFilterCategory } from "@/lib/properties/discover-filter"
 import { PROPERTY_FILTER_SESSION_KEY } from "@/lib/data/storage-keys"
@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils"
 
 export function PropertiesDirectory() {
   const { locale, t, tf } = useLanguage()
-  const products = getPublishedProperties(locale)
+  const { properties: products } = usePublishedProperties(locale)
   const [selectedStayTypes, setSelectedStayTypes] = useState<PropertyStayType[]>([])
   const [selectedAmenities, setSelectedAmenities] = useState<AmenityId[]>([])
   const [selectedProduct, setSelectedProduct] = useState<PublicProperty | null>(null)

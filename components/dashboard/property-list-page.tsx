@@ -2,8 +2,9 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { useMemo, useState } from "react"
-import { ArrowDown, ArrowUp, Eye, EyeOff, Pencil, Plus, Star, Trash2 } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { ArrowDown, ArrowUp, Eye, EyeOff, Pencil, Plus, Star, Trash2, X } from "lucide-react"
 import { formatPropertyPrice } from "@/lib/dashboard/price"
 import { usePropertyStore } from "@/lib/dashboard/property-store"
 import type { DashboardProperty, PropertyStatus } from "@/lib/dashboard/types"
@@ -33,8 +34,27 @@ function getCover(property: DashboardProperty) {
 }
 
 export function PropertyListPage() {
-  const { properties, deleteProperty, reorderFeatured, resetToSeed, isReady } = usePropertyStore()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { properties, deleteProperty, reorderFeatured, resetToSeed, isReady, isSyncing, error } = usePropertyStore()
   const [filter, setFilter] = useState<"all" | PropertyStatus>("all")
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    const created = searchParams.get("created")
+    const updated = searchParams.get("updated")
+
+    if (created) {
+      setSuccessMessage(`Propiedad "${created}" creada correctamente.`)
+      router.replace("/dashboard/properties")
+      return
+    }
+
+    if (updated) {
+      setSuccessMessage("Cambios guardados correctamente.")
+      router.replace("/dashboard/properties")
+    }
+  }, [router, searchParams])
 
   const featured = useMemo(
     () =>
@@ -49,7 +69,7 @@ export function PropertyListPage() {
     return [...list].sort((a, b) => a.name.localeCompare(b.name, "es"))
   }, [properties, filter])
 
-  const moveFeatured = (id: string, direction: -1 | 1) => {
+  const moveFeatured = async (id: string, direction: -1 | 1) => {
     const ids = featured.map((property) => property.id)
     const index = ids.indexOf(id)
     const target = index + direction
@@ -57,12 +77,17 @@ export function PropertyListPage() {
     const next = [...ids]
     const [item] = next.splice(index, 1)
     next.splice(target, 0, item)
-    reorderFeatured(next)
+    await reorderFeatured(next)
   }
 
-  const handleDelete = (property: DashboardProperty) => {
+  const handleDelete = async (property: DashboardProperty) => {
     const confirmed = window.confirm(`¿Eliminar "${property.name}"? Esta acción no se puede deshacer.`)
-    if (confirmed) deleteProperty(property.id)
+    if (confirmed) await deleteProperty(property.id)
+  }
+
+  const handleReset = async () => {
+    const confirmed = window.confirm("¿Restaurar el catálogo demo? Se reemplazarán todas las propiedades.")
+    if (confirmed) await resetToSeed()
   }
 
   if (!isReady) {
@@ -71,6 +96,26 @@ export function PropertyListPage() {
 
   return (
     <div className="space-y-8">
+      {successMessage ? (
+        <div className="flex items-start justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          <p>{successMessage}</p>
+          <button
+            type="button"
+            onClick={() => setSuccessMessage(null)}
+            className="shrink-0 rounded-full p-1 text-emerald-800 hover:bg-emerald-100"
+            aria-label="Cerrar aviso"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ) : null}
+
+      {error ? (
+        <p className="rounded-xl border border-valle-wine-200 bg-valle-wine-50 px-4 py-3 text-sm text-valle-wine-800">
+          {error}
+        </p>
+      ) : null}
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-valle-forest-500">Catálogo</p>
@@ -80,7 +125,7 @@ export function PropertyListPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={resetToSeed} className="dashboard-btn-secondary">
+          <button type="button" onClick={handleReset} disabled={isSyncing} className="dashboard-btn-secondary">
             Restaurar demo
           </button>
           <Link href="/dashboard/properties/new" className="dashboard-btn-primary inline-flex items-center gap-2">

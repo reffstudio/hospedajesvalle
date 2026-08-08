@@ -1,9 +1,7 @@
 "use client"
 
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useState,
@@ -34,6 +32,9 @@ import type { CustomAmenityIconId } from "@/lib/custom-amenity-icons"
 import type { AmenityId } from "@/lib/property-amenities"
 import type { PropertyStayType } from "@/lib/property-stay-type"
 
+import { env, isSupabaseConfigured } from "@/lib/config/env"
+import { PropertyStoreContext } from "@/lib/dashboard/property-store-context"
+import { SupabasePropertyStoreProvider } from "@/lib/dashboard/supabase-property-store"
 import {
   DASHBOARD_CUSTOM_AMENITIES_KEY,
   DASHBOARD_PROPERTIES_KEY,
@@ -56,23 +57,6 @@ type LegacyCustomAmenity = {
   iconId?: string
   highlight?: boolean
 }
-
-type PropertyStoreContextValue = {
-  properties: DashboardProperty[]
-  customAmenityCatalog: CustomAmenityDefinition[]
-  isReady: boolean
-  createProperty: (input: DashboardPropertyInput) => DashboardProperty
-  updateProperty: (id: string, input: Partial<DashboardPropertyInput>) => void
-  deleteProperty: (id: string) => void
-  reorderFeatured: (orderedIds: string[]) => void
-  addCustomAmenityDefinition: (input: {
-    label: string
-    iconId: CustomAmenityIconId
-  }) => CustomAmenityDefinition
-  resetToSeed: () => void
-}
-
-const PropertyStoreContext = createContext<PropertyStoreContextValue | null>(null)
 
 type LegacyLocaleContent = {
   name?: string
@@ -298,6 +282,14 @@ function persistCatalog(catalog: CustomAmenityDefinition[]) {
 }
 
 export function PropertyStoreProvider({ children }: { children: ReactNode }) {
+  if (env.dataProvider === "supabase" && isSupabaseConfigured()) {
+    return <SupabasePropertyStoreProvider>{children}</SupabasePropertyStoreProvider>
+  }
+
+  return <LocalPropertyStoreProvider>{children}</LocalPropertyStoreProvider>
+}
+
+function LocalPropertyStoreProvider({ children }: { children: ReactNode }) {
   const [properties, setProperties] = useState<DashboardProperty[]>([])
   const [customAmenityCatalog, setCustomAmenityCatalog] = useState<CustomAmenityDefinition[]>([])
   const [isReady, setIsReady] = useState(false)
@@ -330,7 +322,7 @@ export function PropertyStoreProvider({ children }: { children: ReactNode }) {
   )
 
   const addCustomAmenityDefinition = useCallback(
-    (input: { label: string; iconId: CustomAmenityIconId }) => {
+    async (input: { label: string; iconId: CustomAmenityIconId }) => {
       let created!: CustomAmenityDefinition
 
       commitCatalog((current) => {
@@ -357,7 +349,7 @@ export function PropertyStoreProvider({ children }: { children: ReactNode }) {
   )
 
   const createProperty = useCallback(
-    (input: DashboardPropertyInput) => {
+    async (input: DashboardPropertyInput) => {
       const normalized = normalizeInput(input, customAmenityCatalog)
       let created: DashboardProperty | null = null
 
@@ -378,7 +370,7 @@ export function PropertyStoreProvider({ children }: { children: ReactNode }) {
   )
 
   const updateProperty = useCallback(
-    (id: string, input: Partial<DashboardPropertyInput>) => {
+    async (id: string, input: Partial<DashboardPropertyInput>) => {
       commit((current) =>
         current.map((property) => {
           if (property.id !== id) return property
@@ -417,14 +409,14 @@ export function PropertyStoreProvider({ children }: { children: ReactNode }) {
   )
 
   const deleteProperty = useCallback(
-    (id: string) => {
+    async (id: string) => {
       commit((current) => current.filter((property) => property.id !== id))
     },
     [commit],
   )
 
   const reorderFeatured = useCallback(
-    (orderedIds: string[]) => {
+    async (orderedIds: string[]) => {
       commit((current) =>
         current.map((property) => {
           const orderIndex = orderedIds.indexOf(property.id)
@@ -438,7 +430,7 @@ export function PropertyStoreProvider({ children }: { children: ReactNode }) {
     [commit],
   )
 
-  const resetToSeed = useCallback(() => {
+  const resetToSeed = useCallback(async () => {
     const seed = createSeedProperties()
     persist(seed)
     persistCatalog([])
@@ -446,17 +438,28 @@ export function PropertyStoreProvider({ children }: { children: ReactNode }) {
     setCustomAmenityCatalog([])
   }, [])
 
+  const refresh = useCallback(async () => {
+    const loaded = loadProperties()
+    setProperties(loaded.properties)
+    setCustomAmenityCatalog(loaded.catalog)
+    persistCatalog(loaded.catalog)
+    setIsReady(true)
+  }, [])
+
   const value = useMemo(
     () => ({
       properties,
       customAmenityCatalog,
       isReady,
+      isSyncing: false,
+      error: null,
       createProperty,
       updateProperty,
       deleteProperty,
       reorderFeatured,
       addCustomAmenityDefinition,
       resetToSeed,
+      refresh,
     }),
     [
       properties,
@@ -468,16 +471,11 @@ export function PropertyStoreProvider({ children }: { children: ReactNode }) {
       reorderFeatured,
       addCustomAmenityDefinition,
       resetToSeed,
+      refresh,
     ],
   )
 
   return <PropertyStoreContext.Provider value={value}>{children}</PropertyStoreContext.Provider>
 }
 
-export function usePropertyStore() {
-  const context = useContext(PropertyStoreContext)
-  if (!context) {
-    throw new Error("usePropertyStore must be used within PropertyStoreProvider")
-  }
-  return context
-}
+export { usePropertyStore } from "@/lib/dashboard/property-store-context"

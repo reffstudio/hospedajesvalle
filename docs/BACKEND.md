@@ -7,11 +7,11 @@ Guía para conectar Supabase y reemplazar datos estáticos / localStorage por da
 | Capa | Implementación | Archivos clave |
 |------|----------------|----------------|
 | Sitio público | Provider `static` — catálogo legacy + metadata del seed | `lib/properties/queries.ts`, `lib/properties/static-catalog.ts` |
-| Dashboard CMS | localStorage | `lib/dashboard/property-store.tsx` |
-| Auth dashboard | Mock (sessionStorage) | `components/dashboard/dashboard-auth-provider.tsx` |
-| Imágenes | Blob URLs en dev | `lib/data/property-image-upload.ts` |
-| Pre-reservas | Log en consola (static) | `lib/properties/queries.ts` → `submitPreReservationLead` |
-| Supabase | Stubs listos | `lib/supabase/*`, `supabase/schema.sql` |
+| Dashboard CMS | Supabase (auth + CRUD) o localStorage fallback | `lib/dashboard/supabase-property-store.tsx`, `lib/supabase/repository/` |
+| Auth dashboard | Supabase Auth cuando `DATA_PROVIDER=supabase` | `components/dashboard/dashboard-auth-provider.tsx` |
+| Imágenes | Supabase Storage cuando conectado | `lib/supabase/storage/property-images.ts` |
+| Pre-reservas | Supabase `pre_reservation_leads` vía `/api/leads` | `app/api/leads/route.ts` |
+| Supabase | Implementado (requiere env + schema) | `lib/supabase/*`, `supabase/schema.sql` |
 
 ## Variables de entorno
 

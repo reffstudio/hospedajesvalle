@@ -92,8 +92,20 @@ create table if not exists public.pre_reservation_leads (
   check_in date not null,
   check_out date not null,
   locale text not null default 'es' check (locale in ('es', 'en')),
-  created_at timestamptz not null default now()
+  status text not null default 'new'
+    check (status in ('new', 'contacted', 'scheduled', 'rejected', 'archived')),
+  notes text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
+
+create index if not exists pre_reservation_leads_status_idx on public.pre_reservation_leads (status);
+create index if not exists pre_reservation_leads_created_at_idx on public.pre_reservation_leads (created_at desc);
+
+drop trigger if exists pre_reservation_leads_set_updated_at on public.pre_reservation_leads;
+create trigger pre_reservation_leads_set_updated_at
+  before update on public.pre_reservation_leads
+  for each row execute function public.set_updated_at();
 
 -- ---------------------------------------------------------------------------
 -- updated_at trigger
@@ -210,8 +222,25 @@ create policy "Admin read pre-reservation leads"
   on public.pre_reservation_leads for select
   using (auth.role() = 'authenticated');
 
+create policy "Admin update pre-reservation leads"
+  on public.pre_reservation_leads for update
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
+
 -- ---------------------------------------------------------------------------
 -- Storage bucket (run in Dashboard or via API)
 -- Bucket: property-images, public read, authenticated write
 -- Path pattern: {property_id}/{uuid}-{filename}
 -- ---------------------------------------------------------------------------
+
+-- Refresh PostgREST schema cache after creating tables
+notify pgrst, 'reload schema';
+
+-- ---------------------------------------------------------------------------
+-- Storage policies — also in supabase/storage-policies.sql (run after bucket exists)
+-- ---------------------------------------------------------------------------
+-- drop policy if exists "Public read property images" on storage.objects;
+-- create policy "Public read property images"
+--   on storage.objects for select to public
+--   using (bucket_id = 'property-images');
+-- ... (see storage-policies.sql)

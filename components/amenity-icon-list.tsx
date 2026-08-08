@@ -1,7 +1,13 @@
 "use client"
 
+import type { LucideIcon } from "lucide-react"
+import { HelpCircle } from "lucide-react"
 import type { AmenityListItem } from "@/lib/amenity-list"
 import { cn } from "@/lib/utils"
+
+function resolveIcon(icon: AmenityListItem["icon"]): LucideIcon {
+  return typeof icon === "function" ? icon : HelpCircle
+}
 
 type AmenityIconListProps = {
   items: AmenityListItem[]
@@ -22,7 +28,7 @@ export function AmenityIconList({ items, className, emptyLabel }: AmenityIconLis
       )}
     >
       {items.map((item) => {
-        const Icon = item.icon
+        const Icon = resolveIcon(item.icon)
         return (
           <li
             key={item.id}

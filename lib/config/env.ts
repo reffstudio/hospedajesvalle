@@ -16,7 +16,10 @@ export const env = {
 
   supabase: {
     url: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-    anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+    anonKey:
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+      "",
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
   },
 
@@ -24,7 +27,17 @@ export const env = {
     propertyImagesBucket:
       process.env.NEXT_PUBLIC_SUPABASE_PROPERTY_IMAGES_BUCKET ?? "property-images",
   },
+
+  email: {
+    resendApiKey: process.env.RESEND_API_KEY ?? "",
+    adminTo: process.env.PRE_RESERVATION_ADMIN_EMAIL ?? "",
+    from: process.env.PRE_RESERVATION_FROM_EMAIL ?? "Hospedajes Valle <onboarding@resend.dev>",
+  },
 } as const
+
+export function isPreReservationEmailConfigured(): boolean {
+  return Boolean(env.email.resendApiKey && env.email.adminTo)
+}
 
 export function isSupabaseConfigured(): boolean {
   return Boolean(env.supabase.url && env.supabase.anonKey)

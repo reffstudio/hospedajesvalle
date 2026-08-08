@@ -3,27 +3,37 @@
 import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
-import { X, Check, User, Mail, Phone, Users, CalendarDays, Send } from "lucide-react"
-import { getPublishedProperties, submitPreReservationLead } from "@/lib/properties/queries"
+import { X, Check, User, Mail, CalendarDays, Send } from "lucide-react"
+import { submitPreReservationLead } from "@/lib/properties/queries"
+import {
+  formatFullPhoneNumber,
+  getDefaultPhoneCountryIso,
+  isValidLocalPhoneNumber,
+} from "@/lib/phone/country-calling-codes"
+import { usePublishedProperties } from "@/lib/properties/use-published-properties"
 import { getDateLocale } from "@/lib/i18n/translations"
 import { usePreReservation } from "./pre-reservation-context"
 import { DateRangeCalendar } from "./date-range-calendar"
+import { PhoneCountryInput } from "./phone-country-input"
 import { useLanguage } from "./language-provider"
 import { cn } from "@/lib/utils"
 
 export function PreReservationModal() {
   const { isOpen, initialPropertyId, close } = usePreReservation()
   const { locale, t, tf } = useLanguage()
-  const featuredProducts = useMemo(() => getPublishedProperties(locale), [locale])
+  const { properties: featuredProducts } = usePublishedProperties(locale)
 
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
-  const [phone, setPhone] = useState("")
+  const [phoneCountry, setPhoneCountry] = useState(() => getDefaultPhoneCountryIso(locale))
+  const [phoneLocal, setPhoneLocal] = useState("")
   const [guests, setGuests] = useState("2")
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [checkIn, setCheckIn] = useState<Date | null>(null)
   const [checkOut, setCheckOut] = useState<Date | null>(null)
   const [submitted, setSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const formatDate = (d: Date | null) => {
     if (!d) return "—"
@@ -42,9 +52,11 @@ export function PreReservationModal() {
   useEffect(() => {
     if (isOpen) {
       setSelectedIds(initialPropertyId ? [initialPropertyId] : [])
+      setPhoneCountry(getDefaultPhoneCountryIso(locale))
       setSubmitted(false)
+      setSubmitError(null)
     }
-  }, [isOpen, initialPropertyId])
+  }, [isOpen, initialPropertyId, locale])
 
   const toggleProperty = (id: string) => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]))
@@ -54,21 +66,24 @@ export function PreReservationModal() {
     return (
       name.trim() !== "" &&
       /\S+@\S+\.\S+/.test(email) &&
-      phone.trim() !== "" &&
+      isValidLocalPhoneNumber(phoneLocal) &&
       selectedIds.length > 0 &&
       checkIn !== null &&
       checkOut !== null
     )
-  }, [name, email, phone, selectedIds, checkIn, checkOut])
+  }, [name, email, phoneLocal, selectedIds, checkIn, checkOut])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isValid || !checkIn || !checkOut) return
+    if (!isValid || !checkIn || !checkOut || isSubmitting) return
+
+    setIsSubmitting(true)
+    setSubmitError(null)
 
     const result = await submitPreReservationLead({
       name: name.trim(),
       email: email.trim(),
-      phone: phone.trim(),
+      phone: formatFullPhoneNumber(phoneCountry, phoneLocal),
       guests: Number(guests) || 1,
       propertyIds: selectedIds,
       checkIn: checkIn.toISOString().slice(0, 10),
@@ -76,8 +91,10 @@ export function PreReservationModal() {
       locale,
     })
 
+    setIsSubmitting(false)
+
     if (!result.ok) {
-      console.error("Pre-reserva:", result.error)
+      setSubmitError(result.error)
       return
     }
 
@@ -89,7 +106,8 @@ export function PreReservationModal() {
     setTimeout(() => {
       setName("")
       setEmail("")
-      setPhone("")
+      setPhoneCountry(getDefaultPhoneCountryIso(locale))
+      setPhoneLocal("")
       setGuests("2")
       setSelectedIds([])
       setCheckIn(null)
@@ -177,23 +195,21 @@ export function PreReservationModal() {
                       className={inputClass}
                     />
                   </div>
-                  <div className="relative">
-                    <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" />
-                    <input
-                      type="tel"
-                      required
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder={t.preReservation.phone}
-                      className={inputClass}
+                  <div className="sm:col-span-2 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_9.5rem]">
+                    <PhoneCountryInput
+                      locale={locale}
+                      countryIso={phoneCountry}
+                      localPhone={phoneLocal}
+                      onCountryChange={setPhoneCountry}
+                      onLocalPhoneChange={setPhoneLocal}
+                      countryLabel={t.preReservation.phoneCountry}
+                      phonePlaceholder={t.preReservation.phoneNumber}
                     />
-                  </div>
-                  <div className="relative">
-                    <Users size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" />
                     <select
                       value={guests}
                       onChange={(e) => setGuests(e.target.value)}
-                      className={cn(inputClass, "appearance-none cursor-pointer")}
+                      className="w-full rounded-xl border border-valle-sage-200 bg-white px-3 py-3 text-sm text-valle-forest-900 focus:border-valle-wine-600 focus:outline-none focus:ring-2 focus:ring-valle-wine-600/30 sm:text-center"
+                      aria-label={t.preReservation.guests}
                     >
                       {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
                         <option key={n} value={n}>
@@ -291,17 +307,20 @@ export function PreReservationModal() {
 
                 <button
                   type="submit"
-                  disabled={!isValid}
+                  disabled={!isValid || isSubmitting}
                   className={cn(
                     "w-full py-4 rounded-full font-medium text-lg flex items-center justify-center gap-2 transition-all",
-                    isValid
+                    isValid && !isSubmitting
                       ? "bg-valle-wine-600 text-white hover:bg-valle-wine-700"
                       : "bg-valle-sage-200 text-neutral-400 cursor-not-allowed",
                   )}
                 >
                   <Send size={18} />
-                  {t.preReservation.submit}
+                  {isSubmitting ? t.preReservation.submitting : t.preReservation.submit}
                 </button>
+                {submitError ? (
+                  <p className="mt-3 text-center text-sm text-valle-wine-700">{submitError}</p>
+                ) : null}
                 <p className="text-xs text-neutral-400 text-center mt-3">{t.preReservation.disclaimer}</p>
               </form>
             )}

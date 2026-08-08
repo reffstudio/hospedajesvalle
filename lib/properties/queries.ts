@@ -127,26 +127,18 @@ export function getRoundedPropertyDisplayCount(count = getPublishedPropertyCount
   return Math.floor(count / 5) * 5
 }
 
-/**
- * Async entry point for Supabase (and SSR). Falls back to static data until implemented.
- */
-export async function getPublicProperties(options: PublicPropertyQueryOptions): Promise<PublicProperty[]> {
-  if (env.dataProvider === "static") {
-    return getPublicPropertiesSync(options)
-  }
-
-  const { fetchPublicPropertiesFromSupabase } = await import("@/lib/supabase/queries/properties")
-  return fetchPublicPropertiesFromSupabase(options)
-}
-
 export async function submitPreReservationLead(
   input: import("./types").PreReservationLeadInput,
-): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  if (env.dataProvider === "static") {
-    console.info("[submitPreReservationLead] static mode — lead logged only:", input)
-    return { ok: true, id: `local-${Date.now()}` }
-  }
+): Promise<{ ok: true; id: string; emailSent?: boolean } | { ok: false; error: string }> {
+  const response = await fetch("/api/leads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  })
 
-  const { insertPreReservationLead } = await import("@/lib/supabase/queries/leads")
-  return insertPreReservationLead(input)
+  const payload = (await response.json()) as
+    | { ok: true; id: string; emailSent?: boolean }
+    | { ok: false; error: string }
+
+  return payload
 }

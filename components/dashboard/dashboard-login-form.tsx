@@ -18,11 +18,11 @@ export function DashboardLoginForm() {
     setError(null)
     setIsSubmitting(true)
 
-    const ok = await login(email, password)
+    const result = await login(email, password)
     setIsSubmitting(false)
 
-    if (!ok) {
-      setError("Ingresa un correo válido para continuar.")
+    if (!result.ok) {
+      setError(result.error)
       return
     }
 
@@ -77,7 +77,8 @@ export function DashboardLoginForm() {
         </form>
 
         <p className="mt-6 text-center text-xs leading-relaxed text-valle-forest-500">
-          Versión de diseño con autenticación simulada. La conexión con Supabase se implementará en la siguiente fase.
+          Acceso protegido con Supabase Auth. Usa el correo y contraseña del usuario admin que creaste en el panel de
+          Supabase.
         </p>
 
         <p className="mt-4 text-center">

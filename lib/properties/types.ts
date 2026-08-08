@@ -4,6 +4,13 @@ import type { AmenityId } from "@/lib/property-amenities"
 import type { PropertyStayType } from "@/lib/property-stay-type"
 import type { Locale } from "@/lib/i18n/types"
 
+/** Serializable custom amenity metadata for API / client hydration. */
+export type PublicCustomAmenityDefinition = {
+  id: string
+  label: string
+  iconId: string
+}
+
 /**
  * Canonical shape consumed by the public site (hero, directory, modals).
  * Built from DashboardProperty via mapDashboardPropertyToPublic().
@@ -21,6 +28,8 @@ export type PublicProperty = {
   quickLookImages: string[]
   dimensions: string
   amenities: AmenityId[]
+  customAmenityIds: string[]
+  customAmenityDefinitions: PublicCustomAmenityDefinition[]
   includes: string[]
   stayType: PropertyStayType
   status: PropertyStatus
@@ -49,4 +58,7 @@ export type PreReservationLeadInput = {
 export type PreReservationLead = PreReservationLeadInput & {
   id: string
   createdAt: string
+  status: import("@/lib/dashboard/lead-types").PreReservationLeadStatus
+  notes: string
+  updatedAt: string
 }

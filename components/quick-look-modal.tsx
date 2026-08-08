@@ -9,6 +9,7 @@ import { BlurPanel } from "./blur-panel"
 import { usePreReservation } from "./pre-reservation-context"
 import { useLanguage } from "./language-provider"
 import { productAmenitiesToListItems } from "@/lib/amenity-list"
+import { hydratePublicPropertyAmenities } from "@/lib/properties/hydrate-public-property"
 
 interface QuickLookModalProps {
   product: any
@@ -36,19 +37,21 @@ export function QuickLookModal({ product, isOpen, onClose }: QuickLookModalProps
 
   if (!product) return null
 
+  const hydratedProduct = hydratePublicPropertyAmenities(product, locale)
+
   const amenityItems =
-    product.amenityItems?.length > 0
-      ? product.amenityItems
-      : productAmenitiesToListItems(product.amenities, locale)
+    hydratedProduct.amenityItems.length > 0
+      ? hydratedProduct.amenityItems
+      : productAmenitiesToListItems(hydratedProduct.amenities, locale)
   const includesList =
-    product.includes?.length > 0 ? product.includes : t.quickLook.includesList
+    hydratedProduct.includes?.length > 0 ? hydratedProduct.includes : t.quickLook.includesList
 
   const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % product.quickLookImages.length)
+    setCurrentImageIndex((prev) => (prev + 1) % hydratedProduct.quickLookImages.length)
   }
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + product.quickLookImages.length) % product.quickLookImages.length)
+    setCurrentImageIndex((prev) => (prev - 1 + hydratedProduct.quickLookImages.length) % hydratedProduct.quickLookImages.length)
   }
 
   return (
@@ -83,14 +86,14 @@ export function QuickLookModal({ product, isOpen, onClose }: QuickLookModalProps
                 <div className="relative">
                   <div className="relative aspect-square rounded-lg overflow-hidden mb-4">
                     <Image
-                      src={product.quickLookImages[currentImageIndex]}
-                      alt={`${product.name} - Image ${currentImageIndex + 1}`}
+                      src={hydratedProduct.quickLookImages[currentImageIndex]}
+                      alt={`${hydratedProduct.name} - Image ${currentImageIndex + 1}`}
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, 50vw"
                     />
 
-                    {product.quickLookImages.length > 1 && (
+                    {hydratedProduct.quickLookImages.length > 1 && (
                       <>
                         <button
                           className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-all duration-200"
@@ -109,7 +112,7 @@ export function QuickLookModal({ product, isOpen, onClose }: QuickLookModalProps
                   </div>
 
                   <div className="flex gap-2">
-                    {product.quickLookImages.map((image: string, index: number) => (
+                    {hydratedProduct.quickLookImages.map((image: string, index: number) => (
                       <button
                         key={index}
                         className={`relative w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
@@ -119,7 +122,7 @@ export function QuickLookModal({ product, isOpen, onClose }: QuickLookModalProps
                       >
                         <Image
                           src={image}
-                          alt={`${product.name} thumbnail ${index + 1}`}
+                          alt={`${hydratedProduct.name} thumbnail ${index + 1}`}
                           fill
                           className="object-cover"
                           sizes="64px"
@@ -131,16 +134,16 @@ export function QuickLookModal({ product, isOpen, onClose }: QuickLookModalProps
 
                 <div className="flex flex-col">
                   <div className="mb-6 pr-10">
-                    <h2 className="text-3xl font-bold text-valle-forest-900 mb-2">{product.name}</h2>
-                    <p className="text-lg text-neutral-600">{product.materials.join(", ")}</p>
+                    <h2 className="text-3xl font-bold text-valle-forest-900 mb-2">{hydratedProduct.name}</h2>
+                    <p className="text-lg text-neutral-600">{hydratedProduct.materials.join(", ")}</p>
                   </div>
 
                   <div className="space-y-6 flex-1">
-                    <div className="text-2xl font-bold text-valle-forest-900">{product.price}</div>
+                    <div className="text-2xl font-bold text-valle-forest-900">{hydratedProduct.price}</div>
 
                     <div>
                       <h4 className="text-sm font-medium text-valle-forest-900 mb-2">{t.quickLook.capacity}</h4>
-                      <p className="text-neutral-600">{product.dimensions}</p>
+                      <p className="text-neutral-600">{hydratedProduct.dimensions}</p>
                     </div>
 
                     <div>
@@ -165,7 +168,7 @@ export function QuickLookModal({ product, isOpen, onClose }: QuickLookModalProps
                     type="button"
                     onClick={() => {
                       onClose()
-                      openPreReservation(product.id)
+                      openPreReservation(hydratedProduct.id)
                     }}
                     className="w-full bg-valle-wine-600 text-white py-4 rounded-full font-medium text-lg hover:bg-valle-wine-700 transition-colors duration-200 flex items-center justify-center gap-2"
                     whileHover={{ scale: 1.02 }}

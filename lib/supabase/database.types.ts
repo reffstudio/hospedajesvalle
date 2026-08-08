@@ -87,11 +87,15 @@ export type Database = {
           check_in: string
           check_out: string
           locale: "es" | "en"
+          status: "new" | "contacted" | "scheduled" | "rejected" | "archived"
+          notes: string
           created_at: string
+          updated_at: string
         }
-        Insert: Omit<Database["public"]["Tables"]["pre_reservation_leads"]["Row"], "id" | "created_at"> & {
+        Insert: Omit<Database["public"]["Tables"]["pre_reservation_leads"]["Row"], "id" | "created_at" | "updated_at"> & {
           id?: string
           created_at?: string
+          updated_at?: string
         }
         Update: Partial<Database["public"]["Tables"]["pre_reservation_leads"]["Insert"]>
       }

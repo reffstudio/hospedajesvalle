@@ -59,9 +59,17 @@ export function mapDashboardPropertyToPublic(
       customAmenityCatalog,
       locale,
     ),
+    amenities: property.amenities,
+    customAmenityIds: property.customAmenityIds,
+    customAmenityDefinitions: customAmenityCatalog
+      .filter((entry) => property.customAmenityIds.includes(entry.id))
+      .map((entry) => ({
+        id: entry.id,
+        label: entry.label,
+        iconId: entry.iconId,
+      })),
     quickLookImages: gallery,
     dimensions: formatDimensionsLabel(property, locale),
-    amenities: property.amenities,
     includes: property.includes,
     stayType: property.stayType ?? "private",
     status: meta?.status ?? ("status" in property ? property.status : "published"),
