@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useId, useRef, useState } from "react"
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { ChevronDown } from "lucide-react"
 import type { Locale } from "@/lib/i18n/types"
 import {
@@ -36,16 +37,43 @@ export function PhoneCountryInput({
   const countries = getCountryCallingCodes(locale)
   const selectedCountry = getCountryByIso(countryIso) ?? countries[0]
   const [open, setOpen] = useState(false)
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, width: 288 })
   const rootRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const listRef = useRef<HTMLUListElement>(null)
   const listboxId = useId()
+
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) return
+
+    const updatePosition = () => {
+      if (!triggerRef.current) return
+      const rect = triggerRef.current.getBoundingClientRect()
+      setMenuPosition({
+        top: rect.bottom + 6,
+        left: rect.left,
+        width: Math.min(288, window.innerWidth - 24),
+      })
+    }
+
+    updatePosition()
+    window.addEventListener("resize", updatePosition)
+    window.addEventListener("scroll", updatePosition, true)
+
+    return () => {
+      window.removeEventListener("resize", updatePosition)
+      window.removeEventListener("scroll", updatePosition, true)
+    }
+  }, [open])
 
   useEffect(() => {
     if (!open) return
 
     const handlePointerDown = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false)
-      }
+      const target = event.target as Node
+      if (rootRef.current?.contains(target)) return
+      if (listRef.current?.contains(target)) return
+      setOpen(false)
     }
 
     const handleEscape = (event: KeyboardEvent) => {
@@ -69,12 +97,13 @@ export function PhoneCountryInput({
     <div ref={rootRef} className={cn("relative min-w-0", className)}>
       <div
         className={cn(
-          "flex items-stretch overflow-hidden rounded-xl border border-valle-sage-200 bg-white transition-all",
+          "flex items-stretch rounded-xl border border-valle-sage-200 bg-white transition-all",
           "focus-within:border-valle-wine-600 focus-within:ring-2 focus-within:ring-valle-wine-600/30",
         )}
       >
         <div className="relative shrink-0 border-r border-valle-sage-200">
           <button
+            ref={triggerRef}
             type="button"
             id={`${listboxId}-trigger`}
             aria-haspopup="listbox"
@@ -82,7 +111,7 @@ export function PhoneCountryInput({
             aria-controls={listboxId}
             aria-label={countryLabel}
             onClick={() => setOpen((current) => !current)}
-            className="flex h-full min-h-[3rem] items-center gap-1.5 px-2.5 py-3 text-sm font-medium text-valle-forest-900 transition-colors hover:bg-valle-sage-50 sm:px-3"
+            className="flex h-full min-h-[3rem] items-center gap-1.5 rounded-l-xl px-2.5 py-3 text-sm font-medium text-valle-forest-900 transition-colors hover:bg-valle-sage-50 sm:px-3"
           >
             <span className="text-base leading-none" aria-hidden="true">
               {countryFlagEmoji(selectedCountry.iso2)}
@@ -92,13 +121,34 @@ export function PhoneCountryInput({
               className={cn("h-3.5 w-3.5 text-neutral-400 transition-transform", open && "rotate-180")}
             />
           </button>
+        </div>
 
-          {open ? (
+        <input
+          type="tel"
+          required
+          inputMode="tel"
+          autoComplete="tel-national"
+          value={localPhone}
+          onChange={(event) => onLocalPhoneChange(normalizeLocalPhoneDigits(event.target.value))}
+          placeholder={phonePlaceholder}
+          className="min-w-0 flex-1 rounded-r-xl border-0 bg-transparent px-3 py-3 text-valle-forest-900 placeholder-neutral-400 focus:outline-none sm:px-4"
+          aria-label={phonePlaceholder}
+        />
+      </div>
+
+      {open && typeof document !== "undefined"
+        ? createPortal(
             <ul
+              ref={listRef}
               id={listboxId}
               role="listbox"
               aria-labelledby={`${listboxId}-trigger`}
-              className="absolute left-0 top-[calc(100%+0.35rem)] z-30 max-h-56 w-[min(18rem,calc(100vw-3rem))] overflow-y-auto rounded-xl border border-valle-sage-200 bg-white py-1 shadow-lg"
+              style={{
+                top: menuPosition.top,
+                left: menuPosition.left,
+                width: menuPosition.width,
+              }}
+              className="fixed z-[100] max-h-56 overflow-y-auto rounded-xl border border-valle-sage-200 bg-white py-1 shadow-lg"
             >
               {countries.map((country) => {
                 const active = country.iso2 === countryIso
@@ -121,22 +171,10 @@ export function PhoneCountryInput({
                   </li>
                 )
               })}
-            </ul>
-          ) : null}
-        </div>
-
-        <input
-          type="tel"
-          required
-          inputMode="tel"
-          autoComplete="tel-national"
-          value={localPhone}
-          onChange={(event) => onLocalPhoneChange(normalizeLocalPhoneDigits(event.target.value))}
-          placeholder={phonePlaceholder}
-          className="min-w-0 flex-1 border-0 bg-transparent px-3 py-3 text-valle-forest-900 placeholder-neutral-400 focus:outline-none sm:px-4"
-          aria-label={phonePlaceholder}
-        />
-      </div>
+            </ul>,
+            document.body,
+          )
+        : null}
 
       <p className="sr-only">{formatCountryOptionLabel(selectedCountry, locale)}</p>
     </div>
