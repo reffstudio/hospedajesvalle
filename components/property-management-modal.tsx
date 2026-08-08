@@ -1,11 +1,18 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Check, User, Mail, Phone, Send, Home } from "lucide-react"
+import { X, Check, User, Mail, Send, Home } from "lucide-react"
 import { BlurPanel } from "./blur-panel"
+import { PhoneCountryInput } from "./phone-country-input"
 import { cn } from "@/lib/utils"
 import { useLanguage } from "./language-provider"
+import {
+  formatFullPhoneNumber,
+  getDefaultPhoneCountryIso,
+  isValidLocalPhoneNumber,
+} from "@/lib/phone/country-calling-codes"
+import { submitPropertyInquiry } from "@/lib/property-inquiry/queries"
 
 interface PropertyManagementModalProps {
   isOpen: boolean
@@ -13,15 +20,24 @@ interface PropertyManagementModalProps {
 }
 
 export function PropertyManagementModal({ isOpen, onClose }: PropertyManagementModalProps) {
-  const { t, tf } = useLanguage()
+  const { locale, t, tf } = useLanguage()
   const [name, setName] = useState("")
-  const [phone, setPhone] = useState("")
+  const [phoneCountry, setPhoneCountry] = useState(() => getDefaultPhoneCountryIso(locale))
+  const [phoneLocal, setPhoneLocal] = useState("")
   const [email, setEmail] = useState("")
   const [propertyDetails, setPropertyDetails] = useState("")
   const [submitted, setSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const isValid =
-    name.trim() !== "" && phone.trim() !== "" && /\S+@\S+\.\S+/.test(email) && propertyDetails.trim() !== ""
+  const isValid = useMemo(() => {
+    return (
+      name.trim() !== "" &&
+      isValidLocalPhoneNumber(phoneLocal) &&
+      /\S+@\S+\.\S+/.test(email) &&
+      propertyDetails.trim().length >= 10
+    )
+  }, [name, phoneLocal, email, propertyDetails])
 
   useEffect(() => {
     if (!isOpen) return
@@ -32,21 +48,48 @@ export function PropertyManagementModal({ isOpen, onClose }: PropertyManagementM
     }
   }, [isOpen])
 
+  useEffect(() => {
+    if (isOpen) {
+      setPhoneCountry(getDefaultPhoneCountryIso(locale))
+      setSubmitError(null)
+    }
+  }, [isOpen, locale])
+
   const resetAndClose = () => {
     onClose()
     setTimeout(() => {
       setName("")
-      setPhone("")
+      setPhoneCountry(getDefaultPhoneCountryIso(locale))
+      setPhoneLocal("")
       setEmail("")
       setPropertyDetails("")
       setSubmitted(false)
+      setSubmitError(null)
     }, 300)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isValid) return
-    console.log("[PropertyManagement] Solicitud enviada:", { name, phone, email, propertyDetails })
+    if (!isValid || isSubmitting) return
+
+    setIsSubmitting(true)
+    setSubmitError(null)
+
+    const result = await submitPropertyInquiry({
+      name: name.trim(),
+      email: email.trim(),
+      phone: formatFullPhoneNumber(phoneCountry, phoneLocal),
+      propertyDetails: propertyDetails.trim(),
+      locale,
+    })
+
+    setIsSubmitting(false)
+
+    if (!result.ok) {
+      setSubmitError(result.error)
+      return
+    }
+
     setSubmitted(true)
   }
 
@@ -123,17 +166,15 @@ export function PropertyManagementModal({ isOpen, onClose }: PropertyManagementM
                         />
                       </div>
 
-                      <div className="relative">
-                        <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" />
-                        <input
-                          type="tel"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          placeholder={t.propertyModal.phone}
-                          className={inputClass}
-                          required
-                        />
-                      </div>
+                      <PhoneCountryInput
+                        locale={locale}
+                        countryIso={phoneCountry}
+                        localPhone={phoneLocal}
+                        onCountryChange={setPhoneCountry}
+                        onLocalPhoneChange={setPhoneLocal}
+                        countryLabel={t.propertyModal.phoneCountry}
+                        phonePlaceholder={t.propertyModal.phoneNumber}
+                      />
 
                       <div className="relative">
                         <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" />
@@ -168,19 +209,22 @@ export function PropertyManagementModal({ isOpen, onClose }: PropertyManagementM
 
                       <motion.button
                         type="submit"
-                        disabled={!isValid}
+                        disabled={!isValid || isSubmitting}
                         className={cn(
                           "mt-2 w-full py-4 rounded-full font-medium text-lg transition-colors duration-200 flex items-center justify-center gap-2",
-                          isValid
+                          isValid && !isSubmitting
                             ? "bg-valle-wine-600 text-white hover:bg-valle-wine-700"
                             : "bg-valle-sage-200 text-neutral-400 cursor-not-allowed",
                         )}
-                        whileHover={isValid ? { scale: 1.02 } : undefined}
-                        whileTap={isValid ? { scale: 0.98 } : undefined}
+                        whileHover={isValid && !isSubmitting ? { scale: 1.02 } : undefined}
+                        whileTap={isValid && !isSubmitting ? { scale: 0.98 } : undefined}
                       >
                         <Send size={20} />
-                        {t.common.requestInfo}
+                        {isSubmitting ? t.propertyModal.submitting : t.common.requestInfo}
                       </motion.button>
+                      {submitError ? (
+                        <p className="text-center text-sm text-valle-wine-700">{submitError}</p>
+                      ) : null}
                     </form>
                   </>
                 )}

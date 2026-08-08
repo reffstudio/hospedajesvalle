@@ -2,13 +2,14 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { CalendarCheck, ExternalLink, LayoutGrid, LogOut } from "lucide-react"
+import { Building2, CalendarCheck, ExternalLink, LayoutGrid, LogOut } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useDashboardAuth } from "./dashboard-auth-provider"
 
 const navItems = [
   { href: "/dashboard/properties", label: "Propiedades", icon: LayoutGrid },
   { href: "/dashboard/pre-reservations", label: "Pre-reservas", icon: CalendarCheck },
+  { href: "/dashboard/property-inquiries", label: "Propietarios", icon: Building2 },
 ]
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {

@@ -99,6 +99,26 @@ export type Database = {
         }
         Update: Partial<Database["public"]["Tables"]["pre_reservation_leads"]["Insert"]>
       }
+      property_inquiry_leads: {
+        Row: {
+          id: string
+          name: string
+          email: string
+          phone: string
+          property_details: string
+          locale: "es" | "en"
+          status: "new" | "contacted" | "scheduled" | "rejected" | "archived"
+          notes: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["property_inquiry_leads"]["Row"], "id" | "created_at" | "updated_at"> & {
+          id?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database["public"]["Tables"]["property_inquiry_leads"]["Insert"]>
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -109,3 +129,4 @@ export type Database = {
 export type PropertyRow = Database["public"]["Tables"]["properties"]["Row"]
 export type PropertyImageRow = Database["public"]["Tables"]["property_images"]["Row"]
 export type PreReservationLeadRow = Database["public"]["Tables"]["pre_reservation_leads"]["Row"]
+export type PropertyInquiryLeadRow = Database["public"]["Tables"]["property_inquiry_leads"]["Row"]
