@@ -1,10 +1,10 @@
 "use client"
 
-import { motion, useTransform, AnimatePresence } from "framer-motion"
+import { motion, useTransform, AnimatePresence, useReducedMotion } from "framer-motion"
 import { useRef, useState, useEffect, useLayoutEffect } from "react"
 import Image from "next/image"
 import { MapPin, Home, ShieldCheck, ChevronDown } from "lucide-react"
-import { Reveal } from "./reveal"
+import { AnimatedText } from "./animated-text"
 import { PropertiesCarousel } from "./properties-carousel"
 import { QuickLookModal } from "./quick-look-modal"
 import { getRoundedPropertyDisplayCount } from "@/lib/properties/queries"
@@ -102,6 +102,7 @@ function HeroChromeStatsRow() {
 export function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null)
   const ctaInNav = useCtaInNav()
+  const reduceMotion = useReducedMotion()
   const { locale, t } = useLanguage()
   const { properties: featuredProducts } = useFeaturedCarouselProperties(locale)
 
@@ -198,43 +199,6 @@ export function HeroSection() {
   // Only capture clicks once the cards are visible.
   const propsPointer = useTransform(scrollYProgress, (v) => (v > 0.34 ? "auto" : "none"))
 
-  const AnimatedText = ({ text, delay = 0 }: { text: string; delay?: number }) => {
-    if (!text) return null
-
-    const words = text.split(" ")
-    let globalIndex = 0
-
-    return (
-      <span>
-        {words.map((word, wordIndex) => {
-          const wordStart = globalIndex
-          globalIndex += word.length
-
-          return (
-            <span key={`${word}-${wordIndex}`} className="inline-block whitespace-nowrap">
-              {word.split("").map((char, index) => (
-                <motion.span
-                  key={`${word}-${index}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 0.5,
-                    delay: delay + (wordStart + index) * 0.03,
-                    ease: [0.21, 0.47, 0.32, 0.98],
-                  }}
-                  className="inline-block"
-                >
-                  {char}
-                </motion.span>
-              ))}
-              {wordIndex < words.length - 1 ? "\u00A0" : null}
-            </span>
-          )
-        })}
-      </span>
-    )
-  }
-
   return (
     // Tall scroll track: the descent + reveal plays out across this height, all pinned.
     <section ref={containerRef} className="relative h-[350vh]" id="propiedades">
@@ -277,29 +241,25 @@ export function HeroSection() {
             </AnimatePresence>
 
             <div className="w-full shrink-0 pt-[var(--hero-logo-gap)]">
-              <Reveal className="w-full">
-                <h1 className="mx-auto mb-4 w-full drop-shadow-[0_4px_40px_rgba(0,0,0,0.65)] sm:mb-5 md:mb-6">
-                  <span className="flex w-full justify-center text-[clamp(1.15rem,4.8vw,2.75rem)] font-black leading-[1.05] tracking-tight text-white">
-                    <AnimatedText text={t.hero.title1} delay={0.5} />
+              <h1 className="mx-auto mb-4 w-full drop-shadow-[0_4px_40px_rgba(0,0,0,0.65)] sm:mb-5 md:mb-6">
+                <span className="flex w-full justify-center text-[clamp(1.15rem,4.8vw,2.75rem)] font-black leading-[1.05] tracking-tight text-white">
+                  <AnimatedText text={t.hero.title1} delay={0.35} />
+                </span>
+                <span className="font-display mt-1.5 flex w-full justify-center sm:mt-2">
+                  <span className="whitespace-nowrap text-[clamp(1.35rem,min(7vw,7vh),4.75rem)] font-light italic leading-none tracking-[0.01em] text-white">
+                    <AnimatedText text={t.hero.title2} delay={0.85} />
                   </span>
-                  <span className="font-display mt-1.5 flex w-full justify-center sm:mt-2">
-                    <span className="whitespace-nowrap text-[clamp(1.35rem,min(7vw,7vh),4.75rem)] font-light italic leading-none tracking-[0.01em] text-white">
-                      <AnimatedText text={t.hero.title2} delay={1.1} />
-                    </span>
-                  </span>
-                </h1>
-              </Reveal>
+                </span>
+              </h1>
 
-              <Reveal delay={0.2} className="w-full">
-                <motion.p
-                  className="mx-auto mb-6 max-w-2xl text-pretty text-base leading-relaxed text-white/90 drop-shadow-[0_2px_16px_rgba(0,0,0,0.75)] sm:mb-7 sm:text-lg md:mb-8 md:text-xl"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.7, ease: [0.21, 0.47, 0.32, 0.98] }}
-                >
-                  {t.hero.subtitle}
-                </motion.p>
-              </Reveal>
+              <motion.p
+                className="mx-auto mb-6 max-w-2xl text-pretty text-base leading-relaxed text-white/90 drop-shadow-[0_2px_16px_rgba(0,0,0,0.75)] sm:mb-7 sm:text-lg md:mb-8 md:text-xl"
+                initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: reduceMotion ? 0 : 0.55, ease: [0.21, 0.47, 0.32, 0.98] }}
+              >
+                {t.hero.subtitle}
+              </motion.p>
 
               <AnimatePresence>
                 {!ctaInNav && (
