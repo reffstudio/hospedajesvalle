@@ -1,20 +1,32 @@
 import type { Metadata } from "next"
 import PropiedadesPageClient from "./page-client"
+import { getSiteUrl, ogImage, siteName } from "@/lib/site"
+
+const description = "Explora nuestro catálogo completo en Valle de Guadalupe y encuentra tu hospedaje ideal."
+const title = "Propiedades"
+const canonicalPath = "/propiedades"
 
 export const metadata: Metadata = {
-  title: "Propiedades | Hospedajes Valle de Guadalupe",
-  description:
-    "Catálogo completo de hospedajes boutique en Valle de Guadalupe. Filtra por amenidades y reserva tu estancia.",
+  title,
+  description,
+  alternates: {
+    canonical: canonicalPath,
+  },
   openGraph: {
-    title: "Propiedades | Hospedajes Valle de Guadalupe",
-    description:
-      "Catálogo completo de hospedajes boutique en Valle de Guadalupe. Filtra por amenidades y reserva tu estancia.",
-    images: [{ url: "/og-share.png", alt: "Hospedajes en Valle de Guadalupe — logo sobre viñedos del valle" }],
+    siteName,
+    title: `${title} | ${siteName}`,
+    description,
+    type: "website",
+    url: `${getSiteUrl()}${canonicalPath}`,
+    locale: "es_MX",
+    images: [ogImage],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Propiedades | Hospedajes Valle de Guadalupe",
-    images: [{ url: "/og-share.png", alt: "Hospedajes en Valle de Guadalupe — logo sobre viñedos del valle" }],
+    title: `${title} | ${siteName}`,
+    description,
+    images: [{ url: ogImage.url, alt: ogImage.alt }],
+    site: "@hospedajesvalle",
   },
 }
 

@@ -1,6 +1,8 @@
 {
   "name": "Hospedajes en Valle de Guadalupe",
   "short_name": "Hospedajes Valle",
+  "description": "Una selección de propiedades en el corazón del Valle de Guadalupe.",
+  "start_url": "/",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",

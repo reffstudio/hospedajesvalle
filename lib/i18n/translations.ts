@@ -198,7 +198,7 @@ const es = {
   },
   footer: {
     brand: "Hospedajes Valle de Guadalupe",
-    tagline: "Hospedajes boutique entre viñedos y montañas.",
+    tagline: "Una selección de propiedades en el corazón del Valle de Guadalupe.",
     copyright: "Todos los derechos reservados.",
     poweredBy: "Powered by",
     adminPanel: "Panel de administración",
@@ -402,7 +402,7 @@ const en = {
   },
   footer: {
     brand: "Hospedajes Valle de Guadalupe",
-    tagline: "Boutique stays among vineyards and mountains.",
+    tagline: "A curated selection of properties in the heart of Valle de Guadalupe.",
     copyright: "All rights reserved.",
     poweredBy: "Powered by",
     adminPanel: "Admin panel",

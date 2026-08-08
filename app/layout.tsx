@@ -2,6 +2,8 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
+import { SiteJsonLd } from "@/components/site-json-ld"
+import { getSiteUrl, ogDescription, ogImage, siteDescription, siteName } from "@/lib/site"
 import "./globals.css"
 
 const inter = Inter({
@@ -18,22 +20,16 @@ const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
 })
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
-
-const shareImage = {
-  url: "/og-share.png",
-  alt: "Hospedajes en Valle de Guadalupe — logo sobre viñedos del valle",
-  width: 1024,
-  height: 1024,
-}
+const siteUrl = getSiteUrl()
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Hospedajes en Valle de Guadalupe — Renta y administración de propiedades",
-  description:
-    "Hospedajes boutique en Valle de Guadalupe, Baja California. Rentamos y administramos villas, cabañas y glamping entre viñedos.",
+  title: {
+    default: `${siteName} — Renta y administración de propiedades`,
+    template: `%s | ${siteName}`,
+  },
+  description: siteDescription,
+  applicationName: siteName,
   manifest: "/site.webmanifest",
   icons: {
     icon: [
@@ -42,23 +38,42 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    siteName: "Hospedajes en Valle de Guadalupe",
-    title: "Hospedajes en Valle de Guadalupe | Renta y administración de propiedades",
-    description:
-      "Villas, cabañas y glamping boutique entre los viñedos de Valle de Guadalupe, Baja California.",
+    siteName,
+    title: `${siteName} | Renta y administración de propiedades`,
+    description: ogDescription,
     type: "website",
-    images: [shareImage],
+    url: siteUrl,
+    images: [ogImage],
     locale: "es_MX",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Hospedajes en Valle de Guadalupe",
-    description:
-      "Villas, cabañas y glamping boutique entre los viñedos de Valle de Guadalupe, Baja California.",
-    images: [shareImage],
+    title: siteName,
+    description: ogDescription,
+    images: [{ url: ogImage.url, alt: ogImage.alt }],
     site: "@hospedajesvalle",
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? {
+        verification: {
+          google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+        },
+      }
+    : {}),
 }
 
 export default function RootLayout({
@@ -67,11 +82,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${cormorant.variable} antialiased`}>
+    <html lang="es" suppressHydrationWarning className={`${inter.variable} ${cormorant.variable} antialiased`}>
       <head>
         <link rel="preload" as="image" href="/fondo-valle-1.png" fetchPriority="high" />
       </head>
       <body className="font-sans bg-valle-sage-50 text-valle-forest-900 overflow-x-hidden">
+        <SiteJsonLd />
         {children}
         <Analytics />
       </body>
