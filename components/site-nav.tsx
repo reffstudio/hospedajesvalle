@@ -227,13 +227,3 @@ export function SiteNavDesktop({ links }: SiteNavLinksProps) {
     </nav>
   )
 }
-
-/** @deprecated Prefer SiteNavMobile + SiteNavDesktop in SiteHeaderBar */
-export function SiteNav({ links }: SiteNavLinksProps) {
-  return (
-    <>
-      <SiteNavMobile links={links} />
-      <SiteNavDesktop links={links} />
-    </>
-  )
-}

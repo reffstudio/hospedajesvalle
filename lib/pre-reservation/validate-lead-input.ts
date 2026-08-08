@@ -1,5 +1,6 @@
 import type { Locale } from "@/lib/i18n/types"
 import type { PreReservationLeadInput } from "@/lib/properties/types"
+import { INPUT_LIMITS, isValidContactName, isValidEmail } from "@/lib/validation/input"
 
 export function validatePreReservationLeadInput(
   body: unknown,
@@ -14,15 +15,17 @@ export function validatePreReservationLeadInput(
   const phone = typeof input.phone === "string" ? input.phone.trim() : ""
   const guests = typeof input.guests === "number" ? input.guests : Number(input.guests)
   const propertyIds = Array.isArray(input.propertyIds)
-    ? input.propertyIds.filter((id): id is string => typeof id === "string" && id.length > 0)
+    ? input.propertyIds
+        .filter((id): id is string => typeof id === "string" && id.length > 0)
+        .slice(0, INPUT_LIMITS.maxPropertyIds)
     : []
   const checkIn = typeof input.checkIn === "string" ? input.checkIn : ""
   const checkOut = typeof input.checkOut === "string" ? input.checkOut : ""
   const locale: Locale = input.locale === "en" ? "en" : "es"
 
-  if (!name) return { ok: false, error: "El nombre es obligatorio." }
-  if (!/\S+@\S+\.\S+/.test(email)) return { ok: false, error: "Correo inválido." }
-  if (!phone) return { ok: false, error: "El teléfono es obligatorio." }
+  if (!isValidContactName(name)) return { ok: false, error: "El nombre es obligatorio." }
+  if (!isValidEmail(email)) return { ok: false, error: "Correo inválido." }
+  if (!phone || phone.length > INPUT_LIMITS.phone) return { ok: false, error: "El teléfono es obligatorio." }
   if (!/^\+[1-9]\d{6,14}$/.test(phone.replace(/\s/g, ""))) {
     return { ok: false, error: "Teléfono inválido." }
   }

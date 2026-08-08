@@ -26,7 +26,8 @@ export async function insertPropertyInquiryLead(
       })
 
       if (error) {
-        return { ok: false, error: error.message }
+        console.error("[insertPropertyInquiryLead]", error.message)
+        return { ok: false, error: "No se pudo registrar la solicitud. Intenta de nuevo." }
       }
     }
 
@@ -41,9 +42,7 @@ export async function insertPropertyInquiryLead(
 
     return { ok: true, id: leadId, emailSent: emailResult.ok }
   } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "No se pudo enviar la solicitud.",
-    }
+    console.error("[insertPropertyInquiryLead]", error instanceof Error ? error.message : error)
+    return { ok: false, error: "No se pudo registrar la solicitud. Intenta de nuevo." }
   }
 }

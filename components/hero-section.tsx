@@ -16,6 +16,7 @@ import { useHeroScrollProgress, useCtaInNav } from "./hero-scroll-context"
 import { useLanguage } from "./language-provider"
 import { PreReservarButton } from "./pre-reservar-button"
 import { BrandLogo } from "./brand-logo"
+import type { PublicProperty } from "@/lib/properties/types"
 
 function HeroChromeStatsRow() {
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -150,7 +151,7 @@ export function HeroSection() {
     }
   }, [scrollYProgress])
 
-  const [selectedProduct, setSelectedProduct] = useState<any>(null)
+  const [selectedProduct, setSelectedProduct] = useState<PublicProperty | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [valleyBgReady, setValleyBgReady] = useState(false)
 
@@ -164,7 +165,7 @@ export function HeroSection() {
     img.onload = () => setValleyBgReady(true)
   }, [])
 
-  const handleQuickLook = (product: any) => {
+  const handleQuickLook = (product: PublicProperty) => {
     setSelectedProduct(product)
     setIsModalOpen(true)
   }

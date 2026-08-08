@@ -1,5 +1,5 @@
 import type { CustomAmenityDefinition, DashboardProperty, DashboardPropertyInput } from "@/lib/dashboard/types"
-import type { PropertyImageRow, PropertyRow } from "@/lib/supabase/database.types"
+import type { PropertyImageRow, PropertyRow, Database } from "@/lib/supabase/database.types"
 import type { AmenityId } from "@/lib/property-amenities"
 import { isPropertyStayType, type PropertyStayType } from "@/lib/property-stay-type"
 
@@ -80,8 +80,10 @@ export function mapDashboardInputToPropertyRow(
   }
 }
 
-export function mapDashboardInputToPropertyUpdate(input: Partial<DashboardPropertyInput>) {
-  const patch: Record<string, unknown> = {}
+export function mapDashboardInputToPropertyUpdate(
+  input: Partial<DashboardPropertyInput>,
+): Database["public"]["Tables"]["properties"]["Update"] {
+  const patch: Database["public"]["Tables"]["properties"]["Update"] = {}
 
   if (input.slug !== undefined) patch.slug = input.slug
   if (input.name !== undefined) patch.name = input.name.trim()

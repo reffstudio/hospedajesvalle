@@ -34,18 +34,13 @@ export async function sendPropertyInquiryAdminEmail(
     })
 
     if (error) {
-      return { ok: false, error: error.message }
-    }
-
-    if (data?.id) {
-      console.info("[sendPropertyInquiryAdminEmail] sent", data.id, "→", env.email.adminTo)
+      console.error("[sendPropertyInquiryAdminEmail]", error.message)
+      return { ok: false, error: "No se pudo enviar la notificación." }
     }
 
     return { ok: true }
   } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "Failed to send admin notification.",
-    }
+    console.error("[sendPropertyInquiryAdminEmail]", error instanceof Error ? error.message : error)
+    return { ok: false, error: "No se pudo enviar la notificación." }
   }
 }

@@ -2,19 +2,18 @@
 
 import { motion } from "framer-motion"
 import Image from "next/image"
+import { prefetchPropertyImages } from "@/lib/properties/prefetch-property-images"
+import type { PublicProperty } from "@/lib/properties/types"
 import { useLanguage } from "./language-provider"
 
+export type ProductCardProperty = Pick<
+  PublicProperty,
+  "id" | "name" | "price" | "image" | "materials" | "quickLookImages" | "dimensions"
+>
+
 interface ProductCardProps {
-  product: {
-    id: string
-    name: string
-    price: string
-    image: string
-    materials: string[]
-    quickLookImages: string[]
-    dimensions: string
-  }
-  onQuickLook: (product: ProductCardProps["product"]) => void
+  product: ProductCardProperty
+  onQuickLook: (product: ProductCardProperty) => void
   priority?: boolean
 }
 
@@ -29,6 +28,8 @@ export function ProductCard({ product, onQuickLook, priority = false }: ProductC
         boxShadow: "rgba(0, 0, 0, 0.1) 0px 10px 50px",
       }}
       onClick={() => onQuickLook(product)}
+      onMouseEnter={() => prefetchPropertyImages([product])}
+      onFocus={() => prefetchPropertyImages([product])}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {

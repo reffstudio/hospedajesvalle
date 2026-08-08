@@ -12,6 +12,7 @@ import {
   isValidLocalPhoneNumber,
 } from "@/lib/phone/country-calling-codes"
 import { usePublishedProperties } from "@/lib/properties/use-published-properties"
+import { prefetchPropertyImages } from "@/lib/properties/prefetch-property-images"
 import { getDateLocale } from "@/lib/i18n/translations"
 import { usePreReservation } from "./pre-reservation-context"
 import { PhoneCountryInput } from "./phone-country-input"
@@ -45,7 +46,7 @@ export function PreReservationModal() {
   const { locale, t, tf } = useLanguage()
   const { properties: featuredProducts, isLoading: isLoadingProperties } = usePublishedProperties(locale)
   const hasOpenedRef = useRef(false)
-  const [showHeavyContent, setShowHeavyContent] = useState(false)
+  const [showCalendar, setShowCalendar] = useState(false)
 
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -72,18 +73,20 @@ export function PreReservationModal() {
 
   useEffect(() => {
     if (!isOpen) {
-      setShowHeavyContent(false)
+      setShowCalendar(false)
       return
     }
 
+    prefetchPropertyImages(featuredProducts)
+
     const frame = window.requestAnimationFrame(() => {
-      setShowHeavyContent(true)
+      setShowCalendar(true)
     })
 
     return () => {
       window.cancelAnimationFrame(frame)
     }
-  }, [isOpen])
+  }, [isOpen, featuredProducts])
 
   useEffect(() => {
     if (!isOpen) return
@@ -272,106 +275,101 @@ export function PreReservationModal() {
                   </div>
                 </div>
 
-                {showHeavyContent ? (
-                  <>
-                    <div className="mb-8">
-                      <div className="mb-3 flex items-center justify-between">
-                        <h3 className="text-sm font-semibold uppercase tracking-wide text-valle-forest-900">
-                          {t.preReservation.propertiesTitle}
-                        </h3>
-                        <span className="text-xs text-neutral-500">
-                          {selectedIds.length}{" "}
-                          {selectedIds.length === 1 ? t.preReservation.selected : t.preReservation.selectedPlural}
-                        </span>
-                      </div>
-                      <p className="mb-4 text-sm text-neutral-500">{t.preReservation.multiSelect}</p>
-                      {isLoadingProperties && featuredProducts.length === 0 ? (
-                        <PropertyPickerSkeleton />
-                      ) : (
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                          {featuredProducts.map((property) => {
-                            const active = selectedIds.includes(property.id)
-                            return (
-                              <button
-                                key={property.id}
-                                type="button"
-                                onClick={() => toggleProperty(property.id)}
-                                className={cn(
-                                  "group relative overflow-hidden rounded-xl border-2 text-left transition-colors",
-                                  active
-                                    ? "border-valle-wine-600 ring-2 ring-valle-wine-600/20"
-                                    : "border-transparent hover:border-valle-sage-200",
-                                )}
-                                aria-pressed={active}
-                              >
-                                <div className="relative aspect-[4/3]">
-                                  <Image
-                                    src={property.image}
-                                    alt={property.name}
-                                    fill
-                                    loading="lazy"
-                                    className="object-cover"
-                                    sizes="(max-width: 640px) 50vw, 200px"
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                                  {active ? (
-                                    <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-valle-wine-600">
-                                      <Check size={14} className="text-white" />
-                                    </div>
-                                  ) : null}
-                                  <div className="absolute bottom-0 left-0 right-0 p-2.5">
-                                    <p className="text-sm font-semibold leading-tight text-white">{property.name}</p>
-                                    <p className="text-xs text-white/80">{property.price}</p>
-                                  </div>
-                                </div>
-                              </button>
-                            )
-                          })}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mb-8">
-                      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-valle-forest-900">
-                        {t.preReservation.datesTitle}
-                      </h3>
-                      <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-2">
-                        <div className="rounded-2xl border border-valle-sage-200 p-4">
-                          <DateRangeCalendar
-                            checkIn={checkIn}
-                            checkOut={checkOut}
-                            onChange={({ checkIn: nextCheckIn, checkOut: nextCheckOut }) => {
-                              setCheckIn(nextCheckIn)
-                              setCheckOut(nextCheckOut)
-                            }}
-                          />
-                        </div>
-                        <div className="flex flex-col gap-3">
-                          <div className="flex items-center gap-3 rounded-xl border border-valle-sage-200 bg-valle-sage-50 px-4 py-3">
-                            <CalendarDays size={18} className="text-valle-olive-600" />
-                            <div>
-                              <p className="text-xs uppercase tracking-wide text-neutral-500">{t.preReservation.checkIn}</p>
-                              <p className="text-sm font-medium text-valle-forest-900">{formatDate(checkIn)}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3 rounded-xl border border-valle-sage-200 bg-valle-sage-50 px-4 py-3">
-                            <CalendarDays size={18} className="text-valle-olive-600" />
-                            <div>
-                              <p className="text-xs uppercase tracking-wide text-neutral-500">{t.preReservation.checkOut}</p>
-                              <p className="text-sm font-medium text-valle-forest-900">{formatDate(checkOut)}</p>
-                            </div>
-                          </div>
-                          <p className="text-xs leading-relaxed text-neutral-500">{t.preReservation.calendarHint}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="mb-8 space-y-8" aria-hidden>
-                    <PropertyPickerSkeleton />
-                    <div className="h-[280px] animate-pulse rounded-2xl bg-valle-sage-100" />
+                <div className="mb-8">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-valle-forest-900">
+                      {t.preReservation.propertiesTitle}
+                    </h3>
+                    <span className="text-xs text-neutral-500">
+                      {selectedIds.length}{" "}
+                      {selectedIds.length === 1 ? t.preReservation.selected : t.preReservation.selectedPlural}
+                    </span>
                   </div>
-                )}
+                  <p className="mb-4 text-sm text-neutral-500">{t.preReservation.multiSelect}</p>
+                  {isLoadingProperties && featuredProducts.length === 0 ? (
+                    <PropertyPickerSkeleton />
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      {featuredProducts.map((property) => {
+                        const active = selectedIds.includes(property.id)
+                        return (
+                          <button
+                            key={property.id}
+                            type="button"
+                            onClick={() => toggleProperty(property.id)}
+                            className={cn(
+                              "group relative overflow-hidden rounded-xl border-2 text-left transition-colors",
+                              active
+                                ? "border-valle-wine-600 ring-2 ring-valle-wine-600/20"
+                                : "border-transparent hover:border-valle-sage-200",
+                            )}
+                            aria-pressed={active}
+                          >
+                            <div className="relative aspect-[4/3] bg-valle-sage-100">
+                              <Image
+                                src={property.image}
+                                alt={property.name}
+                                fill
+                                loading="eager"
+                                className="object-cover"
+                                sizes="(max-width: 640px) 50vw, 200px"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                              {active ? (
+                                <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-valle-wine-600">
+                                  <Check size={14} className="text-white" />
+                                </div>
+                              ) : null}
+                              <div className="absolute bottom-0 left-0 right-0 p-2.5">
+                                <p className="text-sm font-semibold leading-tight text-white">{property.name}</p>
+                                <p className="text-xs text-white/80">{property.price}</p>
+                              </div>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="mb-8">
+                  <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-valle-forest-900">
+                    {t.preReservation.datesTitle}
+                  </h3>
+                  {showCalendar ? (
+                    <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-2">
+                      <div className="rounded-2xl border border-valle-sage-200 p-4">
+                        <DateRangeCalendar
+                          checkIn={checkIn}
+                          checkOut={checkOut}
+                          onChange={({ checkIn: nextCheckIn, checkOut: nextCheckOut }) => {
+                            setCheckIn(nextCheckIn)
+                            setCheckOut(nextCheckOut)
+                          }}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-3 rounded-xl border border-valle-sage-200 bg-valle-sage-50 px-4 py-3">
+                          <CalendarDays size={18} className="text-valle-olive-600" />
+                          <div>
+                            <p className="text-xs uppercase tracking-wide text-neutral-500">{t.preReservation.checkIn}</p>
+                            <p className="text-sm font-medium text-valle-forest-900">{formatDate(checkIn)}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 rounded-xl border border-valle-sage-200 bg-valle-sage-50 px-4 py-3">
+                          <CalendarDays size={18} className="text-valle-olive-600" />
+                          <div>
+                            <p className="text-xs uppercase tracking-wide text-neutral-500">{t.preReservation.checkOut}</p>
+                            <p className="text-sm font-medium text-valle-forest-900">{formatDate(checkOut)}</p>
+                          </div>
+                        </div>
+                        <p className="text-xs leading-relaxed text-neutral-500">{t.preReservation.calendarHint}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-[280px] animate-pulse rounded-2xl bg-valle-sage-100" aria-hidden />
+                  )}
+                </div>
 
                 <button
                   type="submit"

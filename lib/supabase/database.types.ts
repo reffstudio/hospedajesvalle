@@ -1,10 +1,12 @@
 /**
- * Placeholder Database types.
- * Replace with generated output from Supabase CLI:
+ * Database types for Supabase client.
+ * Regenerate when schema changes:
  *   npx supabase gen types typescript --project-id <id> > lib/supabase/database.types.ts
  */
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+
+type LeadStatus = "new" | "contacted" | "scheduled" | "rejected" | "archived"
 
 export type Database = {
   public: {
@@ -33,6 +35,7 @@ export type Database = {
           updated_at?: string
         }
         Update: Partial<Database["public"]["Tables"]["properties"]["Insert"]>
+        Relationships: []
       }
       property_images: {
         Row: {
@@ -48,6 +51,7 @@ export type Database = {
           created_at?: string
         }
         Update: Partial<Database["public"]["Tables"]["property_images"]["Insert"]>
+        Relationships: []
       }
       custom_amenities: {
         Row: {
@@ -56,25 +60,30 @@ export type Database = {
           icon_id: string
           created_at: string
         }
-        Insert: Omit<Database["public"]["Tables"]["custom_amenities"]["Row"], "created_at"> & {
+        Insert: Omit<Database["public"]["Tables"]["custom_amenities"]["Row"], "created_at" | "id"> & {
+          id?: string
           created_at?: string
         }
         Update: Partial<Database["public"]["Tables"]["custom_amenities"]["Insert"]>
+        Relationships: []
       }
       property_amenities: {
         Row: { property_id: string; amenity_id: string }
         Insert: Database["public"]["Tables"]["property_amenities"]["Row"]
         Update: Partial<Database["public"]["Tables"]["property_amenities"]["Insert"]>
+        Relationships: []
       }
       property_highlight_amenities: {
         Row: { property_id: string; amenity_id: string }
         Insert: Database["public"]["Tables"]["property_highlight_amenities"]["Row"]
         Update: Partial<Database["public"]["Tables"]["property_highlight_amenities"]["Insert"]>
+        Relationships: []
       }
       property_custom_amenities: {
         Row: { property_id: string; custom_amenity_id: string; is_highlight: boolean }
         Insert: Database["public"]["Tables"]["property_custom_amenities"]["Row"]
         Update: Partial<Database["public"]["Tables"]["property_custom_amenities"]["Insert"]>
+        Relationships: []
       }
       pre_reservation_leads: {
         Row: {
@@ -87,17 +96,23 @@ export type Database = {
           check_in: string
           check_out: string
           locale: "es" | "en"
-          status: "new" | "contacted" | "scheduled" | "rejected" | "archived"
+          status: LeadStatus
           notes: string
           created_at: string
           updated_at: string
         }
-        Insert: Omit<Database["public"]["Tables"]["pre_reservation_leads"]["Row"], "id" | "created_at" | "updated_at"> & {
+        Insert: Omit<
+          Database["public"]["Tables"]["pre_reservation_leads"]["Row"],
+          "id" | "created_at" | "updated_at" | "status" | "notes"
+        > & {
           id?: string
+          status?: LeadStatus
+          notes?: string
           created_at?: string
           updated_at?: string
         }
         Update: Partial<Database["public"]["Tables"]["pre_reservation_leads"]["Insert"]>
+        Relationships: []
       }
       property_inquiry_leads: {
         Row: {
@@ -107,22 +122,29 @@ export type Database = {
           phone: string
           property_details: string
           locale: "es" | "en"
-          status: "new" | "contacted" | "scheduled" | "rejected" | "archived"
+          status: LeadStatus
           notes: string
           created_at: string
           updated_at: string
         }
-        Insert: Omit<Database["public"]["Tables"]["property_inquiry_leads"]["Row"], "id" | "created_at" | "updated_at"> & {
+        Insert: Omit<
+          Database["public"]["Tables"]["property_inquiry_leads"]["Row"],
+          "id" | "created_at" | "updated_at" | "status" | "notes"
+        > & {
           id?: string
+          status?: LeadStatus
+          notes?: string
           created_at?: string
           updated_at?: string
         }
         Update: Partial<Database["public"]["Tables"]["property_inquiry_leads"]["Insert"]>
+        Relationships: []
       }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
     Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
   }
 }
 
@@ -130,3 +152,5 @@ export type PropertyRow = Database["public"]["Tables"]["properties"]["Row"]
 export type PropertyImageRow = Database["public"]["Tables"]["property_images"]["Row"]
 export type PreReservationLeadRow = Database["public"]["Tables"]["pre_reservation_leads"]["Row"]
 export type PropertyInquiryLeadRow = Database["public"]["Tables"]["property_inquiry_leads"]["Row"]
+export type PreReservationLeadInsert = Database["public"]["Tables"]["pre_reservation_leads"]["Insert"]
+export type PropertyInquiryLeadInsert = Database["public"]["Tables"]["property_inquiry_leads"]["Insert"]

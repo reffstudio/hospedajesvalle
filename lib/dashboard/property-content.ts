@@ -71,12 +71,3 @@ export function formatDimensionsLabel(capacity: CapacityFields, locale: "es" | "
   const bathroomLabel = formatBathroomLabel(fullBathrooms, halfBathrooms, "en")
   return `Up to ${maxGuests} ${guestLabel} · ${bedrooms} ${bedroomLabel} · ${bathroomLabel}`
 }
-
-/** @deprecated Use filterLegacyMarketingLines from card-highlights */
-export function filterMarketingHighlights(highlights: string[]) {
-  return highlights.map((item) => item.trim()).filter(Boolean).filter((item) => !CAPACITY_HIGHLIGHT_PATTERN.test(item))
-}
-
-export function getPropertyDimensionsLabel(property: CapacityFields, locale: "es" | "en") {
-  return formatDimensionsLabel(property, locale)
-}

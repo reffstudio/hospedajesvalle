@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server"
+import { PUBLIC_API_ERRORS, logServerError } from "@/lib/api/errors"
 import { fetchPublicPropertiesFromSupabase } from "@/lib/supabase/queries/properties.server"
 import type { Locale } from "@/lib/i18n/types"
 import { env } from "@/lib/config/env"
 
 export async function GET(request: Request) {
   if (env.dataProvider !== "supabase") {
-    return NextResponse.json({ error: "Supabase provider is not enabled." }, { status: 400 })
+    return NextResponse.json({ error: PUBLIC_API_ERRORS.loadFailed }, { status: 400 })
   }
 
   const { searchParams } = new URL(request.url)
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
     const properties = await fetchPublicPropertiesFromSupabase({ locale, featuredOnly })
     return NextResponse.json({ properties })
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to load properties."
-    return NextResponse.json({ error: message }, { status: 500 })
+    logServerError("api/properties", error)
+    return NextResponse.json({ error: PUBLIC_API_ERRORS.loadFailed }, { status: 500 })
   }
 }

@@ -1,21 +1,7 @@
-/*
-  ==============================================================
-  R E F F   S T U D I O
-  Worldwide Creativity
-  ==============================================================
-  Intentional Design  •  Functional Logic
-
-  "Design. Code. Systems. One Studio. Globally."
-
-  Web: https://reff.studio
-  Contact: hello@reff.studio
-  ==============================================================
-*/
 import type React from "react"
 import type { Metadata } from "next"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
-import { ReffStudioHtmlComment } from "@/components/reff-studio-html-comment"
 import "./globals.css"
 
 const inter = Inter({
@@ -86,7 +72,6 @@ export default function RootLayout({
         <link rel="preload" as="image" href="/fondo-valle-1.png" fetchPriority="high" />
       </head>
       <body className="font-sans bg-valle-sage-50 text-valle-forest-900 overflow-x-hidden">
-        <ReffStudioHtmlComment />
         {children}
         <Analytics />
       </body>

@@ -254,11 +254,13 @@ export function CollectionStrip() {
       pauseAutoScroll()
     }
 
+    const onTouchStart = () => pauseAutoScroll()
+
     section.addEventListener("wheel", onWheel, { passive: true })
-    section.addEventListener("touchstart", pauseAutoScroll, { passive: true })
+    section.addEventListener("touchstart", onTouchStart, { passive: true })
     return () => {
       section.removeEventListener("wheel", onWheel)
-      section.removeEventListener("touchstart", pauseAutoScroll)
+      section.removeEventListener("touchstart", onTouchStart)
     }
   }, [pauseAutoScroll])
 

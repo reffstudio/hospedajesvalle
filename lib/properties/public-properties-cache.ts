@@ -1,6 +1,7 @@
 import { env } from "@/lib/config/env"
 import { getFeaturedCarouselProperties, getPublishedProperties } from "@/lib/properties/queries"
 import { hydratePublicProperties } from "@/lib/properties/hydrate-public-property"
+import { prefetchPropertyImages } from "@/lib/properties/prefetch-property-images"
 import type { PublicProperty } from "@/lib/properties/types"
 import type { Locale } from "@/lib/i18n/types"
 
@@ -54,6 +55,8 @@ async function fetchEntry(locale: Locale): Promise<CacheEntry> {
       all: hydratePublicProperties(allPayload.properties, locale),
       featured: hydratePublicProperties(featuredPayload.properties, locale),
     }
+
+    prefetchPropertyImages(entry.all)
 
     cache.set(locale, entry)
     return entry

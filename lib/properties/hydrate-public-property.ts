@@ -4,16 +4,7 @@ import type { CustomAmenityIconId } from "@/lib/custom-amenity-icons"
 import type { Locale } from "@/lib/i18n/types"
 import type { PublicProperty } from "@/lib/properties/types"
 
-function isHydratedAmenityItems(property: PublicProperty) {
-  const first = property.amenityItems[0]
-  return Boolean(first && typeof first.icon === "function")
-}
-
 export function hydratePublicPropertyAmenities(property: PublicProperty, locale: Locale): PublicProperty {
-  if (isHydratedAmenityItems(property)) {
-    return property
-  }
-
   const catalog: CustomAmenityDefinition[] = (property.customAmenityDefinitions ?? []).map((entry) => ({
     id: entry.id,
     label: entry.label,

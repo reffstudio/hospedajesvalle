@@ -45,10 +45,13 @@ function formatReceivedAt() {
   })
 }
 
+import { sanitizeHeaderValue } from "@/lib/validation/input"
+
 export function buildPreReservationEmailSubject(payload: PreReservationEmailPayload) {
+  const name = sanitizeHeaderValue(payload.name)
   const properties =
     payload.propertyNames.length > 0 ? payload.propertyNames.join(", ") : `${payload.propertyIds.length} propiedad(es)`
-  return `[Hospedajes Valle] Nueva pre-reserva — ${payload.name} · ${properties}`
+  return `[Hospedajes Valle] Nueva pre-reserva — ${name} · ${sanitizeHeaderValue(properties)}`
 }
 
 export function buildPreReservationEmailText(payload: PreReservationEmailPayload) {

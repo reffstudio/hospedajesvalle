@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react"
-import { AMENITY_CATALOG_BY_ID, getAmenityLabel } from "@/lib/amenity-catalog"
+import { AMENITY_CATALOG_BY_ID, getAmenityLabel, isAmenityId } from "@/lib/amenity-catalog"
 import type { CustomAmenityDefinition } from "@/lib/dashboard/types"
 import { getCustomAmenityIcon } from "@/lib/custom-amenity-icons"
 import type { AmenityId } from "@/lib/property-amenities"
@@ -12,7 +12,7 @@ export type AmenityListItem = {
 }
 
 export function catalogAmenitiesToListItems(ids: AmenityId[], locale: "es" | "en"): AmenityListItem[] {
-  return ids.map((id) => {
+  return ids.filter(isAmenityId).map((id) => {
     const item = AMENITY_CATALOG_BY_ID[id]
     return {
       id,
@@ -35,6 +35,7 @@ export function buildAmenityListItems(
     const custom = customAmenityCatalog.find((entry) => entry.id === id)
     if (!custom) continue
     const icon = getCustomAmenityIcon(custom.iconId)
+    if (!icon) continue
     items.push({
       id: custom.id,
       label: custom.label,

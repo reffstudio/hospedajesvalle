@@ -1,16 +1,3 @@
-/*
-  ==============================================================
-  R E F F   S T U D I O
-  Worldwide Creativity
-  ==============================================================
-  Intentional Design  •  Functional Logic
-
-  "Design. Code. Systems. One Studio. Globally."
-
-  Web: https://reff.studio
-  Contact: hello@reff.studio
-  ==============================================================
-*/
 "use client"
 import { Header } from "@/components/header"
 import { HeroSection } from "@/components/hero-section"

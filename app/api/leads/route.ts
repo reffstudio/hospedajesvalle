@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { PUBLIC_API_ERRORS, logServerError } from "@/lib/api/errors"
 import { validatePreReservationLeadInput } from "@/lib/pre-reservation/validate-lead-input"
 import { insertPreReservationLead } from "@/lib/supabase/queries/leads.server"
 
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
     const result = await insertPreReservationLead(validated.value)
     return NextResponse.json(result, { status: result.ok ? 200 : 400 })
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to submit lead."
-    return NextResponse.json({ ok: false, error: message }, { status: 500 })
+    logServerError("api/leads", error)
+    return NextResponse.json({ ok: false, error: PUBLIC_API_ERRORS.submitFailed }, { status: 500 })
   }
 }

@@ -9,6 +9,7 @@ import { formatPropertyPrice } from "@/lib/dashboard/price"
 import { usePropertyStore } from "@/lib/dashboard/property-store"
 import type { DashboardProperty, PropertyStatus } from "@/lib/dashboard/types"
 import type { PropertyStayType } from "@/lib/property-stay-type"
+import { env } from "@/lib/config/env"
 import { cn } from "@/lib/utils"
 
 const statusLabels: Record<PropertyStatus, string> = {
@@ -37,6 +38,7 @@ export function PropertyListPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { properties, deleteProperty, reorderFeatured, resetToSeed, isReady, isSyncing, error } = usePropertyStore()
+  const showDemoReset = process.env.NODE_ENV !== "production" && env.dataProvider !== "supabase"
   const [filter, setFilter] = useState<"all" | PropertyStatus>("all")
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
@@ -125,9 +127,11 @@ export function PropertyListPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={handleReset} disabled={isSyncing} className="dashboard-btn-secondary">
-            Restaurar demo
-          </button>
+          {showDemoReset ? (
+            <button type="button" onClick={handleReset} disabled={isSyncing} className="dashboard-btn-secondary">
+              Restaurar demo
+            </button>
+          ) : null}
           <Link href="/dashboard/properties/new" className="dashboard-btn-primary inline-flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Nueva propiedad

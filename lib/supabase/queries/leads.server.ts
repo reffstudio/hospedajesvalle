@@ -17,11 +17,15 @@ async function resolvePropertyNames(propertyIds: string[]): Promise<string[]> {
     const supabase = getSupabaseAnonServerClient()
     const { data, error } = await supabase.from("properties").select("id, name").in("id", propertyIds)
 
-    if (error || !data) {
+    if (error || !data?.length) {
       return propertyIds
     }
 
-    return propertyIds.map((id) => data.find((row) => row.id === id)?.name ?? id)
+    const rows = data as Array<{ id: string; name: string }>
+    return propertyIds.map((id) => {
+      const row = rows.find((entry) => entry.id === id)
+      return row?.name ?? id
+    })
   } catch {
     return propertyIds
   }
@@ -50,7 +54,8 @@ export async function insertPreReservationLead(
       })
 
       if (error) {
-        return { ok: false, error: error.message }
+        console.error("[insertPreReservationLead]", error.message)
+        return { ok: false, error: "No se pudo registrar la solicitud. Intenta de nuevo." }
       }
     }
 
@@ -67,9 +72,7 @@ export async function insertPreReservationLead(
 
     return { ok: true, id: leadId, emailSent: emailResult.ok }
   } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "No se pudo enviar la pre-reserva.",
-    }
+    console.error("[insertPreReservationLead]", error instanceof Error ? error.message : error)
+    return { ok: false, error: "No se pudo registrar la solicitud. Intenta de nuevo." }
   }
 }

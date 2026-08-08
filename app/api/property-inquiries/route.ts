@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { PUBLIC_API_ERRORS, logServerError } from "@/lib/api/errors"
 import { validatePropertyInquiryInput } from "@/lib/property-inquiry/validate-input"
 import { insertPropertyInquiryLead } from "@/lib/supabase/queries/property-inquiries.server"
 
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
     const result = await insertPropertyInquiryLead(validated.value)
     return NextResponse.json(result, { status: result.ok ? 200 : 400 })
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to submit inquiry."
-    return NextResponse.json({ ok: false, error: message }, { status: 500 })
+    logServerError("api/property-inquiries", error)
+    return NextResponse.json({ ok: false, error: PUBLIC_API_ERRORS.submitFailed }, { status: 500 })
   }
 }

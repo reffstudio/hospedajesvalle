@@ -163,7 +163,7 @@ export function PropertiesDirectory() {
               <ProductCard
                 key={product.id}
                 product={product}
-                onQuickLook={handleQuickLook}
+                onQuickLook={() => handleQuickLook(product)}
                 priority={index < 3}
               />
             ))}

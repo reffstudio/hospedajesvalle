@@ -8,9 +8,11 @@ import { ProductCard } from "./product-card"
 import { cn } from "@/lib/utils"
 import { useLanguage } from "./language-provider"
 
+import type { PublicProperty } from "@/lib/properties/types"
+
 interface PropertiesCarouselProps {
-  properties: any[]
-  onQuickLook: (product: any) => void
+  properties: PublicProperty[]
+  onQuickLook: (product: PublicProperty) => void
 }
 
 export function PropertiesCarousel({ properties, onQuickLook }: PropertiesCarouselProps) {
@@ -113,7 +115,7 @@ export function PropertiesCarousel({ properties, onQuickLook }: PropertiesCarous
               data-carousel-item
               className="snap-start shrink-0 w-[72vw] sm:w-[360px] lg:w-[380px]"
             >
-              <ProductCard product={property} onQuickLook={onQuickLook} priority />
+              <ProductCard product={property} onQuickLook={() => onQuickLook(property)} priority />
             </div>
           ))}
           <div className="snap-start shrink-0 w-5 sm:w-6 md:w-[var(--space-6)]" aria-hidden />

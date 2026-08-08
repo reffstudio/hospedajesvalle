@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react"
+import type { Session } from "@supabase/supabase-js"
 import { env, isSupabaseConfigured } from "@/lib/config/env"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { DASHBOARD_AUTH_KEY } from "@/lib/data/storage-keys"
@@ -91,7 +92,7 @@ function SupabaseDashboardAuthProvider({ children }: { children: ReactNode }) {
 
       void supabase.auth
         .getSession()
-        .then(({ data: { session } }) => {
+        .then(({ data: { session } }: { data: { session: Session | null } }) => {
           if (cancelled) return
           setEmail(session?.user.email ?? null)
           setIsAuthenticated(Boolean(session))
@@ -104,7 +105,7 @@ function SupabaseDashboardAuthProvider({ children }: { children: ReactNode }) {
 
       const {
         data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, session) => {
+      } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
         if (cancelled) return
         setEmail(session?.user.email ?? null)
         setIsAuthenticated(Boolean(session))
@@ -160,8 +161,29 @@ function SupabaseDashboardAuthProvider({ children }: { children: ReactNode }) {
   return <DashboardAuthContext.Provider value={value}>{children}</DashboardAuthContext.Provider>
 }
 
+function DisabledDashboardAuthProvider({ children }: { children: ReactNode }) {
+  const value = useMemo<DashboardAuthContextValue>(
+    () => ({
+      isAuthenticated: false,
+      isLoading: false,
+      email: null,
+      login: async () => ({ ok: false as const, error: "Panel no disponible." }),
+      logout: async () => {},
+    }),
+    [],
+  )
+
+  return <DashboardAuthContext.Provider value={value}>{children}</DashboardAuthContext.Provider>
+}
+
 export function DashboardAuthProvider({ children }: { children: ReactNode }) {
-  if (env.dataProvider === "supabase" && isSupabaseConfigured()) {
+  const useSupabase = env.dataProvider === "supabase" && isSupabaseConfigured()
+
+  if (process.env.NODE_ENV === "production" && !useSupabase) {
+    return <DisabledDashboardAuthProvider>{children}</DisabledDashboardAuthProvider>
+  }
+
+  if (useSupabase) {
     return <SupabaseDashboardAuthProvider>{children}</SupabaseDashboardAuthProvider>
   }
 

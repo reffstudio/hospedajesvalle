@@ -38,6 +38,14 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/dashboard") &&
     !request.nextUrl.pathname.startsWith("/dashboard/login")
 
+  if (
+    process.env.NODE_ENV === "production" &&
+    env.dataProvider !== "supabase" &&
+    isDashboardRoute
+  ) {
+    return NextResponse.redirect(new URL("/", request.url))
+  }
+
   if (env.dataProvider === "supabase" && isDashboardRoute && !user) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = "/dashboard/login"

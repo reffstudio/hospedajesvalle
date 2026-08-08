@@ -23,8 +23,10 @@ function escapeHtml(value: string) {
     .replace(/"/g, "&quot;")
 }
 
+import { sanitizeHeaderValue } from "@/lib/validation/input"
+
 export function buildPropertyInquiryEmailSubject(payload: PropertyInquiryEmailPayload) {
-  return `[Hospedajes Valle] Nueva propiedad — ${payload.name}`
+  return `[Hospedajes Valle] Nueva propiedad — ${sanitizeHeaderValue(payload.name)}`
 }
 
 export function buildPropertyInquiryEmailText(payload: PropertyInquiryEmailPayload) {

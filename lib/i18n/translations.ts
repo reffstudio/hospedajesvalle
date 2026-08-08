@@ -203,9 +203,9 @@ const es = {
     poweredBy: "Powered by",
     adminPanel: "Panel de administración",
   },
-} as const
+}
 
-const en: typeof es = {
+const en = {
   nav: {
     properties: "Properties",
     experiences: "Discover the Valley",
