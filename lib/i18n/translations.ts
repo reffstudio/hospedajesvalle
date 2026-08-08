@@ -201,6 +201,7 @@ const es = {
     tagline: "Hospedajes boutique entre viñedos y montañas.",
     copyright: "Todos los derechos reservados.",
     poweredBy: "Powered by",
+    adminPanel: "Panel de administración",
   },
 } as const
 
@@ -404,6 +405,7 @@ const en: typeof es = {
     tagline: "Boutique stays among vineyards and mountains.",
     copyright: "All rights reserved.",
     poweredBy: "Powered by",
+    adminPanel: "Admin panel",
   },
 }
 

@@ -87,17 +87,21 @@ export function Footer() {
           </nav>
         </div>
 
-        <div className="flex flex-col gap-2 border-t border-valle-sage-200/90 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-          <p className="text-[11px] leading-relaxed text-valle-forest-500">
-            &copy; {currentYear} {t.footer.brand}. {t.footer.copyright}
-          </p>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="grid grid-cols-1 gap-3 border-t border-valle-sage-200/90 py-3.5 sm:grid-cols-3 sm:items-center sm:gap-4">
+          <div className="flex justify-center sm:justify-start">
             <Link
               href="/dashboard/login"
-              className="text-[10px] font-semibold uppercase tracking-[0.16em] text-valle-forest-500 transition-colors hover:text-valle-forest-800"
+              className="inline-flex items-center justify-center rounded-full border border-valle-forest-900/10 bg-white px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-valle-forest-800 shadow-[0_1px_2px_rgba(24,40,32,0.05)] transition-colors hover:border-valle-forest-900/18 hover:bg-valle-sage-50 hover:text-valle-forest-900"
             >
-              Panel de administración
+              {t.footer.adminPanel}
             </Link>
+          </div>
+
+          <p className="text-center text-[11px] leading-relaxed text-valle-forest-500">
+            &copy; {currentYear} {t.footer.brand}. {t.footer.copyright}
+          </p>
+
+          <div className="flex justify-center sm:justify-end">
             <p className="flex items-center gap-1.5 text-[11px] leading-none text-valle-forest-500">
               <span>{t.footer.poweredBy}</span>
               <a
