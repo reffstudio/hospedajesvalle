@@ -1,9 +1,10 @@
 import "server-only"
 
+import { randomUUID } from "crypto"
 import { env } from "@/lib/config/env"
 import { sendPropertyInquiryAdminEmail } from "@/lib/property-inquiry/send-admin-notification"
 import type { PropertyInquiryInput } from "@/lib/property-inquiry/types"
-import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { getSupabaseAnonServerClient } from "@/lib/supabase/anon-server"
 
 export async function insertPropertyInquiryLead(
   input: PropertyInquiryInput,
@@ -12,25 +13,21 @@ export async function insertPropertyInquiryLead(
     let leadId = `local-${Date.now()}`
 
     if (env.dataProvider === "supabase") {
-      const supabase = await getSupabaseServerClient()
+      leadId = randomUUID()
+      const supabase = getSupabaseAnonServerClient()
 
-      const { data, error } = await supabase
-        .from("property_inquiry_leads")
-        .insert({
-          name: input.name.trim(),
-          email: input.email.trim(),
-          phone: input.phone.trim(),
-          property_details: input.propertyDetails.trim(),
-          locale: input.locale,
-        })
-        .select("id")
-        .single()
+      const { error } = await supabase.from("property_inquiry_leads").insert({
+        id: leadId,
+        name: input.name.trim(),
+        email: input.email.trim(),
+        phone: input.phone.trim(),
+        property_details: input.propertyDetails.trim(),
+        locale: input.locale,
+      })
 
       if (error) {
         return { ok: false, error: error.message }
       }
-
-      leadId = data.id
     }
 
     const emailResult = await sendPropertyInquiryAdminEmail({

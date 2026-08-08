@@ -209,7 +209,9 @@ create policy "Public read custom amenities of published properties"
 
 -- Anyone can submit a lead (rate-limit at edge/API in production)
 create policy "Public insert pre-reservation leads"
-  on public.pre_reservation_leads for insert
+  on public.pre_reservation_leads
+  for insert
+  to anon, authenticated
   with check (true);
 
 -- Authenticated dashboard users (admin role) — adjust to your auth setup
@@ -254,7 +256,9 @@ create policy "Admin update pre-reservation leads"
   with check (auth.role() = 'authenticated');
 
 create policy "Public insert property inquiry leads"
-  on public.property_inquiry_leads for insert
+  on public.property_inquiry_leads
+  for insert
+  to anon, authenticated
   with check (true);
 
 create policy "Admin read property inquiry leads"
